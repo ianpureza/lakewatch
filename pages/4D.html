@@ -65,16 +65,20 @@ button:hover::after{animation:fourd-sheen .75s ease-out}
     <label><input type="checkbox" id="lb" checked> Labels</label><label><input type="checkbox" id="tr" checked> Trees</label><label><input type="checkbox" id="stn" checked> Stations</label>
     <button id="zi">＋</button><button id="zo">－</button>
   </div>
-  <div class="note">Illustrative model: simplified shoreline, synthetic terrain, bathymetry, trees and water-level curve. Station readings use the local CSV when available; positions remain approximate because the source has no coordinates. Drag to orbit, tap a station for readings.</div>
+  <div class="note">Illustrative model: shoreline traced from a reference map, synthetic terrain, bathymetry, trees and water-level curve. Station readings use the local CSV when available; positions remain approximate. Drag to orbit, tap a station for readings.</div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const EMBEDDED=new URLSearchParams(location.search).has('embedded');if(EMBEDDED)document.body.classList.add('embedded');
 const LON0=121.275,LAT0=14.36,KX=107.8,KZ=110.6;
 const MX=lon=>(lon-LON0)*KX, MZ=lat=>-(lat-LAT0)*KZ;
-const outerLL=[[121.08,14.50],[121.12,14.53],[121.17,14.52],[121.21,14.50],[121.26,14.52],[121.30,14.50],[121.315,14.45],[121.325,14.39],[121.33,14.34],[121.345,14.335],[121.355,14.38],[121.365,14.44],[121.38,14.49],[121.44,14.47],[121.49,14.43],[121.50,14.38],[121.48,14.32],[121.44,14.27],[121.38,14.26],[121.30,14.22],[121.25,14.19],[121.20,14.19],[121.14,14.20],[121.10,14.24],[121.08,14.30],[121.06,14.36],[121.06,14.43]];
-const outer=outerLL.map(p=>[MX(p[0]),MZ(p[1])]);
-const island=[];for(let i=0;i<28;i++){const a=i/28*6.283;const ex=Math.cos(a)*.022,ey=Math.sin(a)*.05;island.push([MX(121.215+ex*.95+ey*.15),MZ(14.395+ey*.95-ex*.15)])}
+// Reference-map pixels (855x752 image) -> lon/lat (calibrated on Santa Cruz & Los Baños)
+const PX=(x,y)=>[121.416+(x-668)*.00071,14.278-(y-477)*.000688];
+const pxM=p=>{const q=PX(p[0],p[1]);return[MX(q[0]),MZ(q[1])]};
+// Laguna de Bay outline traced clockwise from the Taguig/Napindan corner
+const outerPx=[[222,115],[245,118],[270,122],[300,128],[320,150],[335,180],[345,205],[358,225],[370,250],[380,268],[386,235],[388,200],[400,165],[430,150],[463,125],[468,150],[466,170],[500,175],[525,185],[540,215],[548,250],[552,280],[545,300],[530,330],[515,360],[510,400],[520,430],[560,425],[600,415],[640,400],[650,370],[662,330],[680,305],[700,298],[730,305],[755,320],[765,355],[760,395],[745,425],[725,430],[715,445],[700,460],[680,462],[655,468],[635,480],[610,495],[580,515],[555,540],[535,560],[515,575],[480,595],[430,610],[400,614],[380,622],[360,616],[335,600],[328,570],[340,540],[300,510],[260,465],[225,430],[200,400],[185,385],[160,360],[148,330],[142,290],[142,240],[150,190],[175,150],[200,125]];
+const islandPx=[[388,268],[402,275],[407,320],[403,350],[415,378],[445,382],[450,395],[432,410],[425,440],[415,466],[408,458],[395,415],[382,385],[380,350],[388,310]];
+const outer=outerPx.map(pxM),island=islandPx.map(pxM);
 const inside=(P,x,z)=>{let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a[1]>z)!=(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])c=!c}return c};
 const dSeg=(P,x,z)=>{let m=1e9;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[j],b=P[i],vx=b[0]-a[0],vz=b[1]-a[1];let t=((x-a[0])*vx+(z-a[1])*vz)/(vx*vx+vz*vz);t=Math.max(0,Math.min(1,t));const d=Math.hypot(x-a[0]-t*vx,z-a[1]-t*vz);if(d<m)m=d}return m};
 const g=(x,z,lon,lat,H,s)=>H*Math.exp(-(((x-MX(lon))**2+(z-MZ(lat))**2)/(2*s*s)));
@@ -92,7 +96,7 @@ for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){
   const lon=LON0+x/KX;
   let h,c;
   if(lake){
-    const dm=4+6*sstep(121.28,121.38,lon)+5*Math.exp(-(((x-MX(121.29))**2+(z-MZ(14.36))**2)/(2*3.2*3.2)));
+    const dm=4+6*sstep(121.28,121.38,lon)+5*Math.exp(-(((x-MX(121.2))**2+(z-MZ(14.36))**2)/(2*3.2*3.2)));
     const dep=.4+dm*(1-Math.exp(-d/4))+.25*Math.sin(x*.7)*Math.cos(z*.6);
     h=12.5-dep;const t=Math.min(dep/12,1);c=[.36-.3*t,.58-.43*t,.64-.34*t];isLake[k]=1;
   }else{
@@ -121,36 +125,73 @@ const terrain=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:tru
 const wg=new THREE.PlaneGeometry(W,D,60,54);wg.rotateX(-Math.PI/2);
 const wm=new THREE.Mesh(wg,new THREE.MeshPhongMaterial({color:0x2a8fc0,transparent:true,opacity:.58,shininess:90,specular:0x99ccee}));S.add(wm);
 let EX=60;
-function applyEx(){for(let k=0;k<NX*NZ;k++)pos[k*3+1]=(H[k]-12.5)*EX/1000;geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();updTrees();updateTreeSprites();updStations()}
+function applyEx(){for(let k=0;k<NX*NZ;k++)pos[k*3+1]=(H[k]-12.5)*EX/1000;geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();updateTreeSprites();updStations()}
 // time model
 function level(d,sc){let L=11.65+.85*Math.sin(2*Math.PI*(d-194)/365);
   if(sc==1){if(d>=265&&d<268)L+=2.4*sstep(265,268,d);else if(d>=268)L+=2.4*Math.exp(-(d-268)/45)}return L}
 const fmt=d=>new Date(2009,0,1+d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 S.fog=new THREE.Fog(getComputedStyle(document.documentElement).getPropertyValue('--bg2').trim()||'#cfe0ea',100,260);S.add(new THREE.HemisphereLight(0xcfe8ff,0x4a5a3a,.35));
-const treeRoot=new THREE.Group();treeRoot.name='RealisticLowPolyTreeAssets';S.add(treeRoot);
-const treeTrunkM=new THREE.InstancedMesh(new THREE.CylinderGeometry(.075,.13,1.4,7),new THREE.MeshLambertMaterial({color:0x60432d,vertexColors:true}),TR.length);
-const treeBranchM=new THREE.InstancedMesh(new THREE.CylinderGeometry(.035,.07,.62,6),new THREE.MeshLambertMaterial({color:0x60432d,vertexColors:true}),TR.length*2);
-const treeCanopyGeo=new THREE.IcosahedronGeometry(.34,1);
-const treeCanopyA=new THREE.InstancedMesh(treeCanopyGeo,new THREE.MeshLambertMaterial({color:0x3f8545,vertexColors:true}),TR.length);
-const treeCanopyB=new THREE.InstancedMesh(treeCanopyGeo,new THREE.MeshLambertMaterial({color:0x5c9b4e,vertexColors:true}),TR.length);
-const treeCanopyC=new THREE.InstancedMesh(treeCanopyGeo,new THREE.MeshLambertMaterial({color:0x2f6f3e,vertexColors:true}),TR.length);
-treeRoot.add(treeTrunkM,treeBranchM,treeCanopyA,treeCanopyB,treeCanopyC);
-const treeDummy=new THREE.Object3D(),treeUp=new THREE.Vector3(0,1,0),treeDirection=new THREE.Vector3();
-const NATURAL_LEAF_PALETTE=[0x4d7f3d,0x5c9141,0x6fa44a,0x82b34b,0x95bd55,0xa8c65c,0x568a45];
-function treeColor(seed,species,layer){const index=Math.floor((seed*17+species*2+layer*1.7)%NATURAL_LEAF_PALETTE.length);const color=new THREE.Color(NATURAL_LEAF_PALETTE[index]);const variation=((seed*13.7+layer*.31)%1-.5)*.045;color.offsetHSL((species?.006:0),variation*.35,variation);return color}
-TR.forEach((t,i)=>{const species=t[4],seed=t[5];treeTrunkM.setColorAt(i,new THREE.Color().setHSL(.075,.32,.18+.05*seed));treeCanopyA.setColorAt(i,treeColor(seed,species,0));treeCanopyB.setColorAt(i,treeColor(seed*.8,species,1));treeCanopyC.setColorAt(i,treeColor(seed*.6,species,2));});
-function setTreeInstance(mesh,index,position,scale,rotationY=0,quaternion=null){treeDummy.position.copy(position);treeDummy.scale.copy(scale);treeDummy.rotation.set(0,rotationY,0);if(quaternion)treeDummy.quaternion.copy(quaternion);treeDummy.updateMatrix();mesh.setMatrixAt(index,treeDummy.matrix)}
-function updTrees(){TR.forEach((t,i)=>{const s=t[3],seed=t[5],species=t[4],baseY=(t[2]-12.5)*EX/1000,x=t[0],z=t[1];setTreeInstance(treeTrunkM,i,new THREE.Vector3(x,baseY+.7*s,z),new THREE.Vector3(s*(.9+seed*.18),s*(.9+seed*.12),s*(.9+seed*.18)),seed*6.283);
-  const branchBase=new THREE.Vector3(x,baseY+.78*s,z),branchSpan=.26*s,branchRise=.17*s;for(let b=0;b<2;b++){const side=b?1:-1;const start=branchBase.clone().add(new THREE.Vector3(side*.04*s,0,0));const end=start.clone().add(new THREE.Vector3(side*branchSpan,branchRise,(seed-.5)*.12*s));treeDirection.copy(end).sub(start).normalize();const branchCenter=start.clone().add(end).multiplyScalar(.5);const q=new THREE.Quaternion().setFromUnitVectors(treeUp,treeDirection);setTreeInstance(treeBranchM,i*2+b,branchCenter,new THREE.Vector3(s,s,s),0,q);}
-  const canopyBase=baseY+(.98+(species?.1:0))*s;setTreeInstance(treeCanopyA,i,new THREE.Vector3(x,canopyBase,z),new THREE.Vector3(s*(species?.72:1.05),s*(species?1.2:1),s*(species?.72:1.05)),seed*6.283);setTreeInstance(treeCanopyB,i,new THREE.Vector3(x-.2*s,canopyBase+.25*s,z+.02*s),new THREE.Vector3(s*(species?.56:.74),s*(species?.72:.78),s*(species?.56:.74)),seed*5);setTreeInstance(treeCanopyC,i,new THREE.Vector3(x+.2*s,canopyBase+.2*s,z-.02*s),new THREE.Vector3(s*(species?.5:.7),s*(species?.65:.72),s*(species?.5:.7)),seed*4);});
-  [treeTrunkM,treeBranchM,treeCanopyA,treeCanopyB,treeCanopyC].forEach((mesh)=>{mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;});}
+
+// ---------- Realistic procedural trees (hand-painted canvas sprites) ----------
+const mkRand=s=>()=>{s=(s*16807)%2147483647;return(s-1)/2147483646};
+const LEAF=['#24521f','#2f6b2c','#3e8231','#559a38','#74b343','#9bcb50','#c3e070'];
+function leafClump(c,x,y,r,rnd){
+  // shadowed underside, then mid body, then sunlit top-left crown made of many small leaf blobs
+  for(let l=0;l<5;l++){
+    const n=Math.round(r*(1.6-l*.12)),sp=r*(1-l*.14),ox=-l*r*.1,oy=-l*r*.13;
+    for(let i=0;i<n;i++){
+      const a=rnd()*6.283,d=Math.sqrt(rnd())*sp,px=x+Math.cos(a)*d+ox,py=y+Math.sin(a)*d*.72+oy;
+      const lit=Math.max(0,Math.min(1,(l/4)*.75+(-(Math.cos(a)+Math.sin(a))*.15)+rnd()*.25));
+      c.fillStyle=LEAF[Math.min(6,Math.floor(lit*6.4+(l>2?1:0)))];
+      const s=r*(.16+rnd()*.1);c.save();c.translate(px,py);c.rotate(rnd()*3.14);c.beginPath();c.ellipse(0,0,s*1.25,s*.8,0,0,6.283);c.fill();c.restore();
+    }
+  }
+}
+function drawTree(c,ox,v){
+  const rnd=mkRand(4321+v*977),bx=ox+128,by=304;
+  c.fillStyle='rgba(0,0,0,.30)';c.beginPath();c.ellipse(bx,by+3,72,10,0,0,6.283);c.fill();
+  // trunk centreline (v0 twisted, v1 straight, v2 leaning)
+  const sway=[20,5,-18][v],lean=[0,2,34][v],topY=[196,190,182][v],pts=[];
+  for(let i=0;i<=24;i++){const t=i/24;pts.push([bx+lean*t*t+sway*Math.sin(t*(v==0?7:3.4))*(.35+.65*t),by-12-(by-12-topY)*t,(1-t)*(v==1?16:23)+t*6])}
+  // roots
+  c.lineCap='round';
+  for(let i=0;i<7;i++){const dir=(i/6-.5)*2,sx=bx+dir*8,ex=bx+dir*(42+rnd()*24),ey=by+1+rnd()*4;
+    c.strokeStyle='#4a301d';c.lineWidth=9-Math.abs(dir)*3;c.beginPath();c.moveTo(sx,by-34);c.quadraticCurveTo(sx+dir*18,by-6,ex,ey);c.stroke();
+    c.strokeStyle='#8a5d36';c.lineWidth=3;c.beginPath();c.moveTo(sx-1,by-34);c.quadraticCurveTo(sx+dir*18-2,by-8,ex,ey-1);c.stroke()}
+  // moss patch at the base
+  c.fillStyle='rgba(88,130,48,.7)';c.beginPath();c.ellipse(bx-6,by-14,26,8,0,0,6.283);c.fill();
+  // trunk body with bark shading
+  pts.forEach((p,i)=>{const t=i/24;c.fillStyle=`rgb(${96-t*14|0},${64-t*8|0},${38-t*4|0})`;c.beginPath();c.arc(p[0],p[1],p[2],0,6.283);c.fill()});
+  pts.forEach((p,i)=>{if(i%2)return;c.fillStyle='rgba(176,124,74,.55)';c.beginPath();c.ellipse(p[0]-p[2]*.35,p[1],p[2]*.35,3.4,0,0,6.283);c.fill();c.fillStyle='rgba(40,24,14,.5)';c.beginPath();c.ellipse(p[0]+p[2]*.5,p[1]+2,p[2]*.25,3,0,0,6.283);c.fill()});
+  if(v!=1){c.fillStyle='#2c1a0f';[[.45,-4],[.62,5]].forEach(h=>{const p=pts[Math.floor(h[0]*24)];c.beginPath();c.ellipse(p[0]+h[1],p[1],4,6,0,0,6.283);c.fill()})}
+  const top=pts[24],mid=pts[14];
+  const cl=[[[128,150,38],[62,150,38],[196,152,40],[88,112,44],[168,112,44],[128,86,48]],
+            [[128,172,50],[84,140,36],[172,136,38],[128,112,46],[128,60,34],[96,88,30],[160,86,30]],
+            [[48,152,32],[212,134,34],[96,138,46],[142,150,38],[84,92,46],[186,84,46]]][v];
+  cl.forEach(k=>{c.strokeStyle='#5a3c24';c.lineWidth=Math.max(4,k[2]*.18);const from=k[1]>mid[1]?mid:top;c.beginPath();c.moveTo(from[0],from[1]);c.quadraticCurveTo((from[0]+k[0])/2,Math.min(from[1],k[1]+k[2]*.5)-6,k[0],k[1]+k[2]*.45);c.stroke()});
+  cl.forEach(k=>leafClump(c,k[0],k[1],k[2],rnd));
+  // sparkle of bright edge leaves
+  for(let i=0;i<60;i++){const k=cl[Math.floor(rnd()*cl.length)],a=rnd()*6.283,d=k[2]*(.8+rnd()*.3);c.fillStyle=LEAF[3+Math.floor(rnd()*4)];c.beginPath();c.ellipse(k[0]+Math.cos(a)*d,k[1]+Math.sin(a)*d*.72-3,4.2,2.8,rnd()*3,0,6.283);c.fill()}
+}
+function makeTreeAtlas(){const cvs=document.createElement('canvas');cvs.width=768;cvs.height=320;const c=cvs.getContext('2d');for(let v=0;v<3;v++)drawTree(c,v*256,v);const t=new THREE.CanvasTexture(cvs);t.anisotropy=4;return t}
 let treeSpriteRoot=null;
-function makeTreeAtlasMaterial(texture,variant){const map=texture.clone();map.needsUpdate=true;map.wrapS=THREE.ClampToEdgeWrapping;map.wrapT=THREE.ClampToEdgeWrapping;map.repeat.set(1/3,1);map.offset.set(variant/3,0);if(typeof THREE.SRGBColorSpace!=='undefined')map.colorSpace=THREE.SRGBColorSpace;else map.encoding=THREE.sRGBEncoding;return new THREE.MeshBasicMaterial({map,color:new THREE.Color(1.14,1.14,1.04),transparent:true,alphaTest:.04,depthWrite:false,side:THREE.DoubleSide})}
-function updateTreeSprites(){if(!treeSpriteRoot)return;const layers=treeSpriteRoot.userData.layers,dummy=new THREE.Object3D();for(let variant=0;variant<3;variant++)for(let axis=0;axis<2;axis++){const mesh=layers[variant*2+axis];TR.forEach((t,i)=>{const spriteVariant=Math.min(2,Math.floor(t[5]*3));if(spriteVariant!==variant){dummy.position.set(0,-999,0);dummy.scale.set(0,0,0);dummy.rotation.set(0,0,0)}else{const s=t[3]*1.25,baseY=(t[2]-12.5)*EX/1000;dummy.position.set(t[0],baseY+s*.72,t[1]);dummy.scale.set(s*1.25,s*1.5,1);dummy.rotation.set(0,axis?Math.PI/2:0,0)}dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix)});mesh.instanceMatrix.needsUpdate=true}}
-function loadTreeAtlas(){new THREE.TextureLoader().load('../assets/lakewatch-tree-atlas.png',(texture)=>{treeSpriteRoot=new THREE.Group();treeSpriteRoot.name='GeneratedTreeAtlasBillboards';treeSpriteRoot.userData.layers=[];for(let variant=0;variant<3;variant++)for(let axis=0;axis<2;axis++){const mesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),makeTreeAtlasMaterial(texture,variant),TR.length);mesh.frustumCulled=false;treeSpriteRoot.userData.layers.push(mesh);treeSpriteRoot.add(mesh)}S.add(treeSpriteRoot);treeRoot.visible=false;updateTreeSprites()},undefined,()=>{})}
-loadTreeAtlas();
-// monitoring buoys (approximate positions, synthetic readings)
-const ST=[['WB-1','Northern West Bay',121.16,14.49,1.3,-.2],['WB-2','Napindan / Taguig',121.11,14.49,1.5,-.4],['WB-3','Central West Bay',121.13,14.43,1.2,0],['WB-4','Muntinlupa / San Pedro',121.09,14.34,1.6,-.3],['WB-5','Biñan / Sta. Rosa',121.14,14.26,1.4,-.1],['SB-1','Calamba / Los Baños',121.20,14.23,1.1,.1],['SB-2','Bay / Santa Cruz South',121.32,14.26,.9,.2],['CB-1','Central Bay',121.27,14.34,.8,.3],['TC-1','Talim Channel',121.255,14.41,.9,.1],['EB-1','East Bay Center',121.41,14.37,.7,.3],['EB-2','Northeast Bay',121.44,14.43,.8,.2],['EB-3','Southeast Bay',121.42,14.30,.6,.4]].map(a=>({id:a[0],name:a[1],lon:a[2],lat:a[3],eu:a[4],doff:a[5]}));
+function makeTreeAtlasMaterial(texture,variant){const map=texture.clone();map.needsUpdate=true;map.wrapS=map.wrapT=THREE.ClampToEdgeWrapping;map.repeat.set(1/3,1);map.offset.set(variant/3,0);if(typeof THREE.SRGBColorSpace!=='undefined')map.colorSpace=THREE.SRGBColorSpace;else map.encoding=THREE.sRGBEncoding;return new THREE.MeshBasicMaterial({map,transparent:true,alphaTest:.4,depthWrite:true,side:THREE.DoubleSide})}
+function buildTrees(){const atlas=makeTreeAtlas();treeSpriteRoot=new THREE.Group();treeSpriteRoot.userData.layers=[];
+  for(let variant=0;variant<3;variant++)for(let axis=0;axis<2;axis++){const mesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),makeTreeAtlasMaterial(atlas,variant),TR.length);mesh.frustumCulled=false;
+    TR.forEach((t,i)=>{const r1=hs(i*3.1,variant+1),r2=hs(i*5.3,variant+7);mesh.setColorAt(i,new THREE.Color(.82+.3*t[5],.88+.2*r1,.8+.2*r2))});
+    treeSpriteRoot.userData.layers.push(mesh);treeSpriteRoot.add(mesh)}
+  S.add(treeSpriteRoot);updateTreeSprites()}
+function updateTreeSprites(){if(!treeSpriteRoot)return;const layers=treeSpriteRoot.userData.layers,dummy=new THREE.Object3D();
+  for(let variant=0;variant<3;variant++)for(let axis=0;axis<2;axis++){const mesh=layers[variant*2+axis];
+    TR.forEach((t,i)=>{const sv=Math.min(2,Math.floor(t[5]*3));
+      if(sv!==variant){dummy.position.set(0,-999,0);dummy.scale.set(0,0,0);dummy.rotation.set(0,0,0)}
+      else{const s=t[3]*1.15,baseY=(t[2]-12.5)*EX/1000,rot=t[5]*3.14;dummy.position.set(t[0],baseY+s*.9,t[1]);dummy.scale.set(s*1.6,s*2,1);dummy.rotation.set(0,rot+(axis?Math.PI/2:0),0)}
+      dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix)});
+    mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true}}
+buildTrees();
+
+// monitoring buoys: positions taken from the markers on the reference map (readings synthetic)
+const ST=[['LB-1','Napindan outlet',232,135,1.5,-.4],['LB-2','Taguig Bay',224,148,1.5,-.3],['LB-3','Muntinlupa',158,313,1.6,-.3],['LB-4','West Bay Center',273,321,1.2,0],['LB-5','Biñan',195,388,1.4,-.1],['LB-6','Santa Rosa',216,418,1.4,-.1],['LB-7','Cardona Bay',456,269,1.0,.1],['LB-8','Pililla North',544,223,.9,.2],['LB-9','Pililla South',545,268,.9,.2],['LB-10','Jalajala',546,312,.8,.2],['LB-11','Central Bay',456,486,.8,.3],['LB-12','Los Baños',391,600,1.1,.1],['LB-13','Victoria',555,525,.7,.3],['LB-14','Santa Cruz',632,448,.7,.3],['LB-15','Santa Cruz East',676,418,.6,.4]].map(a=>{const q=PX(a[2],a[3]);return{id:a[0],name:a[1],lon:q[0],lat:q[1],eu:a[4],doff:a[5]}});
 const stG=new THREE.Group(),stM=[],mastG=new THREE.CylinderGeometry(.05,.05,1,6);S.add(stG);
 ST.forEach(s=>{s.x=MX(s.lon);s.z=MZ(s.lat);s.h=H[Math.round((s.z+D/2)/dz)*NX+Math.round((s.x+W/2)/dx)];
  s.mast=new THREE.Mesh(mastG,new THREE.MeshLambertMaterial({color:0xdddddd}));
@@ -174,10 +215,10 @@ stage.addEventListener('pointerleave',()=>hoverStation(null));
 let down0=[0,0];const rc=new THREE.Raycaster(),m2=new THREE.Vector2();
 stage.addEventListener('pointerdown',e=>down0=[e.clientX,e.clientY]);
 stage.addEventListener('pointerup',e=>{if(Math.hypot(e.clientX-down0[0],e.clientY-down0[1])>5)return;const r=stage.getBoundingClientRect();m2.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);rc.setFromCamera(m2,cam);const h=rc.intersectObjects(stM);sel=h.length?h[0].object.userData.st:null;if(sel)focusStation(sel);updCard();updStations();notifySelection()});
-function projStations(){const on=document.getElementById('stn').checked,w=stage.clientWidth,h=stage.clientHeight;stG.visible=on;const treesOn=document.getElementById('tr').checked;treeRoot.visible=treesOn&&!treeSpriteRoot;if(treeSpriteRoot)treeSpriteRoot.visible=treesOn;
+function projStations(){const on=document.getElementById('stn').checked,w=stage.clientWidth,h=stage.clientHeight;stG.visible=on;if(treeSpriteRoot)treeSpriteRoot.visible=document.getElementById('tr').checked;
  ST.forEach(s=>{const v=s.ball.position.clone().add(new THREE.Vector3(0,1.1,0)).project(cam);s.el.style.display=on&&v.z<1?'block':'none';s.el.style.left=(v.x*.5+.5)*w+'px';s.el.style.top=(-v.y*.5+.5)*h+'px'})}
-// labels
-const places=[['Laguna de Bay · West Bay',121.14,14.43],['East Bay',121.42,14.36],['Talim Island',121.215,14.395],['Jala-Jala',121.33,14.42],['Napindan outlet',121.085,14.545],['Binangonan',121.19,14.47],['Los Baños',121.22,14.19],['Mt. Makiling',121.20,14.14],['Santa Cruz',121.41,14.27],['Sierra Madre',121.56,14.42]];
+// labels (reference-map pixel positions)
+const places=[['Laguna de Bay · West Bay',230,300],['East Bay',700,370],['Talim Island',418,370],['Jala-Jala',570,360],['Napindan outlet',222,100],['Binangonan',340,200],['Los Baños',385,642],['Mt. Makiling',330,690],['Santa Cruz',668,500],['Sierra Madre',820,300]].map(p=>{const q=PX(p[1],p[2]);return[p[0],q[0],q[1]]});
 const lbEls=places.map(p=>{const e=document.createElement('div');e.className='lbl';e.textContent=p[0];stage.appendChild(e);return e});
 // orbit
 let th=.5,ph=.95,rad=78;const tgt=new THREE.Vector3(0,0,0),focusGoal=new THREE.Vector3(0,0,0);let focusDistanceGoal=78;
