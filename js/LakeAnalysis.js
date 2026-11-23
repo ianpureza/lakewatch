@@ -15,7 +15,7 @@ function ringToShape(ring, scale, center) { return ring.map((coordinate) => proj
 export class LakeAnalysis {
   constructor(scene) { this.scene = scene; this.group = new THREE.Group(); this.group.name = 'GeographicLagunaLakeAnalysis'; this.group.visible = false; this.active = false; this.scene.add(this.group); this.markerGroup = new THREE.Group(); this.markerGroup.name = 'LagunaLakeMonitoringStations'; this.group.add(this.markerGroup); this.placeholderObjects = ['LagunaLakeTerrainPlaceholder', 'LagunaLakeWaterPlaceholder'].map((name) => scene.getObjectByName(name)).filter(Boolean); this.scale = 1 / 11000; this.modelReady = false; this.bounds = null; this.projectedCenter = new THREE.Vector2(); this.stationEntries = []; this.labelsVisible = true; }
   async load() {
-    try { const response = await fetch('./assets/laguna-de-bay.geojson'); if (!response.ok) throw new Error(`Boundary request failed (${response.status})`); const geojson = await response.json(); this.geojson = geojson; this.buildGeoJson(geojson); this.modelReady = true; if (this.active) this.group.visible = true; return { ok: true, source: geojson.licence || 'OpenStreetMap contributors' }; }
+    try { const response = await fetch('../assets/laguna-de-bay.geojson'); if (!response.ok) throw new Error(`Boundary request failed (${response.status})`); const geojson = await response.json(); this.geojson = geojson; this.buildGeoJson(geojson); this.modelReady = true; if (this.active) this.group.visible = true; return { ok: true, source: geojson.licence || 'OpenStreetMap contributors' }; }
     catch (error) { return { ok: false, error }; }
   }
   buildGeoJson(collection) {

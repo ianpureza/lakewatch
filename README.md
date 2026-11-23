@@ -12,13 +12,16 @@ LakeWatch 3D is a vanilla JavaScript/Three.js first-person environmental researc
 
 Three.js is loaded as an ES module from jsDelivr. The geographic boundary is vendored in `assets/laguna-de-bay.geojson`, and the local monitoring adapter reads `csv/LLDA_2020_2025_combined_partial.csv` through PHP. The project has no MySQL database; the CSV is the current source of truth for station readings.
 
-## Structure
+## Published structure
 
-- `index.html` - lightweight landing page and simulator launch route
-- `simulator.html` - first-person office and analysis UI
-- `4D.html` - standalone lake 4D terrain view, also embedded by the simulator
+The public web root has one entry page. Secondary screens live under `pages/` so the project can be uploaded directly to shared PHP hosting without competing root entry files.
+
+- `index.html` - only public root entry page; lightweight landing page and simulator launch route
+- `pages/simulator.html` - first-person office and analysis UI
+- `pages/4D.html` - standalone lake 4D terrain view, also embedded by the simulator
 - `assets/lakewatch-tree-atlas.png` - transparent stylized tree atlas used by the 4D renderer
-- `Lake Watch Magazine.html` - interactive flipbook used by the wall display
+- `pages/Lake Watch Magazine.html` - interactive flipbook used by the wall display
+- `archive/landingpage.html` - retained legacy landing-page export, not part of the published route
 - `csv/LLDA_2020_2025_combined_partial.csv` - local LLDA monitoring readings used by the simulator
 - `csv/LLDA_2020Q4_estimated_station_coordinates.csv` - shared estimated lake/tributary coordinate layer
 - `api/monitoring.php` - CSV-to-JSON adapter used by the office, 4D model, map, charts, and summary
