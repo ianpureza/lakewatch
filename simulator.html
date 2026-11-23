@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="LakeWatch 3D first-person environmental monitoring simulator for Laguna Lake">
+  <title>LakeWatch 3D | POV Simulator</title>
+  <link rel="stylesheet" href="./css/main.css?v=overview5">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+</head>
+<body class="simulator-page">
+  <main id="app" aria-label="LakeWatch 3D first-person research simulator">
+    <div id="loading" class="status-card">Preparing the research office…</div>
+    <section id="intro" class="overlay-card" aria-labelledby="intro-title">
+      <a class="back-link" href="./index.html">← Back to landing page</a>
+      <p class="eyebrow">LAKEWATCH 3D · POV SIMULATOR</p>
+      <h1 id="intro-title">Laguna Lake Research Office</h1>
+      <p>Explore the environmental monitoring workspace, then approach the central research table to enter the lake analysis.</p>
+      <div class="controls" aria-label="Controls">
+        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Walk</span>
+        <span><kbd>Mouse</kbd> Look · <kbd>Wheel</kbd> Zoom · <kbd>+</kbd><kbd>-</kbd> Zoom</span>
+        <span><kbd>Shift</kbd> Fast walk</span>
+        <span><kbd>Esc</kbd> Release cursor</span>
+      </div>
+      <button id="start-button" type="button">Start Exploring</button>
+      <p id="pointer-hint" class="hint">Click the button to capture the mouse.</p>
+      <p class="dashboard-link unavailable">Monitoring data loads from the local LLDA CSV · use the workstation to import another verified dataset</p>
+    </section>
+    <div id="crosshair" aria-hidden="true">+</div>
+    <div id="interaction-prompt" class="interaction-prompt" aria-live="polite" hidden></div>
+    <section id="panel-backdrop" class="panel-backdrop" hidden>
+      <article id="interaction-panel" class="interaction-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" tabindex="-1">
+        <p class="eyebrow">LAKEWATCH 3D · RESEARCH OFFICE</p>
+        <h2 id="panel-title"></h2>
+        <div id="panel-content"></div>
+        <div class="panel-actions"><button id="magazine-prev" class="magazine-nav" type="button" hidden>Back</button><button id="magazine-next" class="magazine-nav" type="button" hidden>Next</button><span id="magazine-action-spacer" class="magazine-action-spacer" hidden></span><button id="panel-close" type="button">Close</button><button id="panel-resume" type="button">Resume Exploration</button></div>
+      </article>
+    </section>
+    <section id="analysis-ui" class="analysis-ui" hidden aria-label="Laguna Lake environmental analysis">
+      <button id="analysis-collapse" class="analysis-collapse" type="button" aria-expanded="true">Collapse Analysis</button>
+      <aside class="analysis-sidebar analysis-left">
+        <p class="eyebrow">4D/2D ANALYSIS · STAGE 3</p>
+        <h2>Laguna Lake</h2>
+        <p class="analysis-source">Boundary: OpenStreetMap lake relation · WGS84</p>
+        <label for="parameter-select">Parameter</label>
+        <select id="parameter-select" aria-label="Water quality parameter"><option value="do">Loading parameters…</option></select>
+        <label for="date-select">Observation date</label>
+        <select id="date-select" aria-label="Observation date" disabled><option>Loading dates…</option></select>
+        <label for="station-search">Station search</label><input id="station-search" class="station-search" type="search" placeholder="Search station or code" aria-label="Search monitoring stations">
+        <div id="station-list" class="station-list" aria-label="Available monitoring stations"></div>
+        <div class="layer-controls"><label><input id="stations-toggle" type="checkbox" checked> Station markers</label></div>
+        <div class="analysis-view-switch" role="group" aria-label="Analysis view"><button id="analysis-view-3d" class="is-active" type="button" aria-pressed="true">4D View</button><button id="analysis-view-2d" type="button" aria-pressed="false">2D Map</button></div>
+        <p id="analysis-status" class="analysis-status">Loading geographic boundary…</p>
+        <p class="demo-badge">SIMULATED DATA — EDUCATIONAL DEMONSTRATION</p>
+      </aside>
+      <aside class="analysis-sidebar analysis-right">
+        <p class="eyebrow">SELECTED STATION</p>
+        <h3 id="station-name">No station selected</h3>
+        <p id="station-details" class="analysis-copy">Select a station marker to inspect the educational demonstration measurements.</p>
+        <div id="measurement-list" class="measurement-list"></div>
+        <div id="legend" class="legend"><span class="legend-swatch"></span> Loading numeric range</div>
+        <div class="chart-wrap"><canvas id="history-chart" aria-label="Historical parameter trend chart"></canvas></div>
+      </aside>
+      <div id="reference-map" class="reference-map" hidden aria-label="4D Laguna Lake analysis map"></div>
+      <div id="reference-map-2d" class="reference-map reference-map-2d" hidden aria-label="2D Laguna Lake analysis map"><div id="leaflet-map"></div><canvas id="flat-map-canvas" hidden></canvas><div class="flat-map-hint">Click a station · pan and zoom the map</div></div>
+      <div class="analysis-toolbar" role="toolbar" aria-label="Analysis controls"><button id="analysis-reset" type="button">Reset Camera</button><button id="analysis-labels" type="button">Hide Labels</button><button id="analysis-time-play" type="button">Play 4D Time</button><input id="analysis-time-slider" class="analysis-time-slider" type="range" min="0" max="0" value="0" step="1" aria-label="4D time timeline"><span id="analysis-time-readout" class="analysis-time-readout">—</span></div>
+    </section>
+    <div id="webgl-error" class="status-card error" hidden></div>
+  </main>
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js"}}
+  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script type="module" src="./js/Game.js?v=overview16"></script>
+</body>
+</html>

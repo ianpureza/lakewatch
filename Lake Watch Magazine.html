@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lake Watch Magazine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a dark reading room with a 3D flipbook in the middle; paper pages alternate light and dark, charts are tappable. */
+:root{
+  --panel:#0F2021; --panel2:#162728; --control:#193536;
+  --mint:#75C6A8; --mintbright:#9BE0C3; --gold:#F3D48A;
+  --water:#3B8B9A; --land:#597A56; --mist:#DCE3E4;
+  --good:#3FBF6B; --amber:#F2B134; --poor:#E5484D;
+  --paper:#F3F8F6; --teal-ink:#2A6670;
+  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(1200px 600px at 50% -10%,#1d3b3d 0%,var(--panel) 60%);color:var(--mist);font-family:var(--body);overflow-x:hidden}
+a{color:inherit}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.top{max-width:1100px;margin:0 auto;padding:14px 16px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:space-between}
+.brand{font-family:var(--display);font-weight:800;font-size:20px;color:#fff;display:flex;align-items:center;gap:10px}
+.top .meta{font-family:var(--mono);font-size:12.5px;color:#9CC4BF}
+.top a.back{font-size:14px;color:var(--mintbright);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+.stage{position:relative;width:100%}
+.scaler{position:absolute;left:50%;top:0;transform-origin:top center;perspective:2400px}
+.book{position:relative;width:100%;height:100%;transition:transform .9s cubic-bezier(.4,.1,.2,1)}
+.leaf{position:absolute;top:0;transform-origin:left center;transform-style:preserve-3d;transition:transform .95s cubic-bezier(.45,.05,.25,1)}
+.leaf.flipped{transform:rotateY(-180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.35)}
+.face.front{border-radius:3px 10px 10px 3px}
+.face.back{transform:rotateY(180deg);border-radius:10px 3px 3px 10px}
+.face.front::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(0,0,0,0) 9%)}
+.face.back::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(270deg,rgba(0,0,0,.28),rgba(0,0,0,0) 9%)}
+.face.blank{background:var(--panel2)}
+
+.controls{max-width:760px;margin:18px auto 0;display:flex;align-items:center;gap:14px;padding:0 16px}
+.cbtn{width:48px;height:48px;border-radius:50%;border:2px solid var(--mint);background:transparent;color:var(--mintbright);font-size:22px;flex:none;display:grid;place-items:center}
+.cbtn:hover:not(:disabled){background:var(--mint);color:var(--panel)}
+.cbtn:disabled{opacity:.35;cursor:default}
+.slidebox{flex:1;display:flex;flex-direction:column;gap:6px}
+.slidebox label{font-family:var(--mono);font-size:12.5px;color:#9CC4BF;text-align:center}
+input[type=range]{width:100%;accent-color:var(--mint);height:28px}
+.hint{text-align:center;font-size:13px;color:#7FA6A2;margin:10px 0 40px}
+
+/* pages */
+.page{width:100%;height:100%;padding:34px 32px 58px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;scrollbar-width:thin;font-size:14.5px;line-height:1.55}
+.light{background:var(--paper);color:var(--panel)}
+.dark{background:var(--panel2);color:#E4F0EE}
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin:0}
+.light .kicker{color:var(--teal-ink)} .dark .kicker{color:var(--mintbright)}
+.page h2{font-family:var(--display);font-weight:800;font-size:30px;line-height:1.05;letter-spacing:-.015em;margin:0;text-wrap:balance}
+.dark h2{color:#fff}
+.page p{margin:0}
+.src{font-size:12px;opacity:.75;margin-top:auto}
+.folio{position:absolute;left:0;right:0;bottom:0;padding:18px 18px 10px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.12em;opacity:.9;z-index:2}
+.light .folio{background:linear-gradient(180deg,rgba(243,248,246,0),#F3F8F6 40%)}.dark .folio{background:linear-gradient(180deg,rgba(22,39,40,0),#162728 40%)}.folio button{min-width:44px;height:36px;border-radius:18px;border:1.5px solid currentColor;background:transparent;color:inherit;font-size:16px}
+.folio button:hover{background:var(--mint);color:var(--panel);border-color:var(--mint)}
+.folio .sp{min-width:44px}
+
+.chip{font-family:var(--body);font-size:13.5px;font-weight:700;min-height:40px;padding:6px 14px;border-radius:10px;border:1.5px solid currentColor;background:transparent;color:inherit}
+.light .chip{color:var(--teal-ink)} .dark .chip{color:var(--mintbright)}
+.chip.on,.chip:hover{background:var(--mint);color:var(--panel);border-color:var(--mint)}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.card{border-radius:14px;padding:11px 15px}
+.light .card{background:#fff;border:1px solid #D4E3DF} .dark .card{background:var(--control);border:1px solid #2C5254}
+.card b{display:block;font-family:var(--display);font-size:17px;margin-bottom:3px}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#fff;border:1px solid #D4E3DF;border-radius:14px;padding:12px 14px}
+.stat .n{font-family:var(--display);font-weight:800;font-size:34px;line-height:1;color:var(--teal-ink)}
+.stat .u{font-size:13px;opacity:.8;margin-top:4px}
+
+.barrow{display:grid;grid-template-columns:96px 1fr 52px;gap:10px;align-items:center;width:100%;text-align:left;background:transparent;border:1.5px solid transparent;color:inherit;border-radius:10px;padding:3px 6px;min-height:40px;font-size:13px}
+.barrow:hover,.barrow.on{border-color:var(--mint)}
+.bar{height:16px;border-radius:8px;overflow:hidden;position:relative}
+.light .bar{background:#DCE8E4} .dark .bar{background:#0F2021}
+.bar i{display:block;height:100%;width:0;border-radius:8px;background:var(--water);transition:width 1s cubic-bezier(.3,.7,.2,1)}
+.seen .bar i{width:var(--w)}
+.val{font-family:var(--mono);font-weight:700;text-align:right}
+.chart{position:relative}
+.gline{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed var(--gold);pointer-events:none}
+.gline span{position:absolute;top:-16px;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--gold);white-space:nowrap}
+
+.acc{display:flex;flex-direction:column;gap:8px}
+.accb{width:100%;text-align:left;border-radius:12px;padding:10px 14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14.5px;min-height:44px;border:1px solid #D4E3DF;background:#fff;color:var(--panel)}
+.dark .accb{background:var(--control);border-color:#2C5254;color:#E4F0EE}
+.accb::after{content:"+";font-family:var(--mono);font-size:18px;color:var(--teal-ink)}
+.dark .accb::after{color:var(--mintbright)}
+.accb[aria-expanded=true]{border-color:var(--mint)}
+.accb[aria-expanded=true]::after{content:"–"}
+.accp{display:none;padding:2px 14px 10px;font-size:14px}
+.accp.open{display:block}
+
+.q{margin-bottom:6px}
+.q .qt{font-weight:700;margin-bottom:6px;font-size:14.5px}
+.opts{display:flex;flex-wrap:wrap;gap:6px}.opt{flex:1 1 auto;text-align:center;min-height:40px;padding:6px 12px;border-radius:10px;border:1.5px solid #B9D0D0;background:#fff;color:var(--panel);font-size:14px}
+.opt:hover:not(:disabled){border-color:var(--mint)}
+.opt.ok{background:#D6F3E3;border-color:var(--good)} .opt.no{background:#FBDADB;border-color:var(--poor)}
+.qe{font-size:13px;color:var(--teal-ink);min-height:0}
+
+.check{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:transparent;border:0;color:inherit;padding:5px 0;font-size:14px;min-height:42px}
+.box{width:22px;height:22px;border-radius:6px;border:2px solid var(--mint);flex:none;display:grid;place-items:center;font-weight:800;color:var(--panel);margin-top:1px}
+.check.done .box{background:var(--mint)}
+.check.done .box::after{content:"✓"}
+
+.tl{display:flex;gap:8px;flex-wrap:wrap}
+.gauge{display:flex;gap:18px;align-items:flex-end}
+.tank{position:relative;width:96px;height:210px;border:2px solid #4C7A7C;border-radius:8px 8px 14px 14px;overflow:hidden;background:#0F2021;flex:none}
+.water{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#8FD6EC,#2E93C9);transition:height .6s cubic-bezier(.3,.7,.2,1)}
+.mark{position:absolute;left:0;right:0;height:0;border-top:2px dashed}
+.mark span{position:absolute;right:4px;top:-17px;font-family:var(--mono);font-size:10.5px;background:rgba(15,32,33,.8);padding:0 3px}
+.bigv{font-family:var(--display);font-weight:800;font-size:46px;line-height:1;color:var(--gold)}
+
+.srcs{margin:0;padding-left:18px;font-size:12.5px;line-height:1.5}
+.srcs li{margin-bottom:5px}
+.srcs a{color:var(--teal-ink);word-break:break-word}
+
+.flow{width:100%;height:auto;display:block;border-radius:12px;background:#0F2021}
+.flow .fwd{display:block} .flow .bwd{display:none}
+.flow.bf .fwd{display:none} .flow.bf .bwd{display:block}
+@keyframes dash{to{stroke-dashoffset:-24}}
+.flow .anim{animation:dash 1.2s linear infinite}
+
+.cover{background:linear-gradient(180deg,#0B1A1B 0%,#10393F 55%,#0F2021 100%);color:#fff;position:relative}
+.cover .inner{position:absolute;inset:0;padding:34px 32px;display:flex;flex-direction:column}
+.mast{font-family:var(--display);font-weight:800;font-size:86px;line-height:.86;letter-spacing:-.04em;margin:6px 0 0}
+.mast span{color:var(--mint)}
+.cl{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;font-weight:700;font-size:15px}
+.cl li{display:flex;gap:10px}
+.cl li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--gold);margin-top:7px;flex:none}
+.cbtn2{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 22px;border-radius:12px;background:var(--mint);color:var(--panel);font-weight:700;font-size:15px;border:0;text-decoration:none}
+.cbtn2.ghost{background:transparent;color:var(--mintbright);border:2px solid var(--mint)}
+
+@media (prefers-reduced-motion:reduce){.leaf,.book,.bar i,.water{transition:none}.flow .anim{animation:none}}
+
+/* Wall-display mode: the magazine becomes a focused, edge-to-edge reader inside the simulator. */
+body.embedded{background:radial-gradient(1000px 520px at 50% -12%,#1d4a4c 0%,#071617 66%);overflow:hidden}
+body.embedded .top,body.embedded .controls,body.embedded .hint{display:none}
+body.embedded .wrap{width:100%;max-width:none;padding:0}
+body.embedded .stage{height:100dvh;min-height:0}
+body.embedded .scaler{top:0}
+body.embedded .page{font-size:clamp(12px,1.35vw,14.5px)}
+body.embedded .folio{padding-bottom:12px}
+body.embedded .folio button{display:none}
+body.embedded .folio{justify-content:center}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><svg width="26" height="26" viewBox="0 0 28 28" aria-hidden="true"><path d="M2 12c3-4 6-4 9 0s6 4 9 0 5-3 6-1" fill="none" stroke="#75C6A8" stroke-width="2.5" stroke-linecap="round"/><path d="M2 20c3-4 6-4 9 0s6 4 9 0 5-3 6-1" fill="none" stroke="#3B8B9A" stroke-width="2.5" stroke-linecap="round"/></svg>Lake Watch Magazine</div>
+  <div class="meta">Issue 01 · November 2026 · News as of Nov 23, 2026</div>
+  <a class="back" href="https://claude.ai/artifact/LvN6y5F4cviDDcNSkVFRyw">← LakeWatch 3D home</a>
+</header>
+
+<main class="wrap">
+  <div class="stage" id="stage"><div class="scaler" id="scaler"><div class="book" id="book"></div></div></div>
+  <div class="controls">
+    <button class="cbtn" id="prev" aria-label="Previous page">‹</button>
+    <div class="slidebox"><label for="jump" id="pglabel">Cover</label><input type="range" id="jump" min="0" max="8" value="0" step="1"></div>
+    <button class="cbtn" id="next" aria-label="Next page">›</button>
+  </div>
+  <p class="hint">Turn pages with the arrows, your keyboard (← →) or a swipe. Tap the charts, cards and chips to explore.</p>
+</main>
+
+<script>
+(function(){
+var W=440,H=720,TOTAL=16;
+var stage=document.getElementById('stage'),scaler=document.getElementById('scaler'),book=document.getElementById('book');
+var prevB=document.getElementById('prev'),nextB=document.getElementById('next'),jump=document.getElementById('jump'),pgl=document.getElementById('pglabel');
+var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+var embedded=new URLSearchParams(location.search).has('embedded');
+if(embedded)document.body.classList.add('embedded');
+var mode='',leaves=[],N=0,k=0,curFace=0;
+
+/* ---------- content data (paraphrased from LLDA pages and news reports, see Sources page) ---------- */
+var DET={
+ fk:[
+  {t:'Jul 14 · Binangonan, Rizal',x:'LLDA opened an investigation into a fish kill in the Rizal part of the lake and said it was too early to name a cause. It noted a widespread algal bloom. When algae die and decompose, dissolved oxygen can drop sharply and stress fish.'},
+  {t:'Jul 21 · Pililla, Rizal',x:'Dead fish were reported off Pililla. The Coast Guard and BFAR went out to measure the affected area. Possible triggers named include algal growth and decay, warm water, and weak wind or water circulation.'},
+  {t:'Sep 1 · Jala-Jala, Rizal',x:'Reports put the loss at more than 20,000 kg of tilapia and bighead carp across more than 30 cages. LLDA pointed to the ongoing bloom and noted most affected fish were in commercial pens and cages. Fisherfolk group Pamalakaya asked LLDA to check for illegal wastewater discharge.'}
+ ],
+ cl:[
+  {t:'Station V · Angono, Rizal: 851 mg/L',x:'The highest chloride reading in LLDA\'s bloom advisory, about 2.4 times the 350 mg/L guideline. Chloride is a marker of salty water.'},
+  {t:'Station XIII · Taytay, Rizal: 773 mg/L',x:'The second highest reading, about 2.2 times the guideline. Both this and Station V exceeded it.'},
+  {t:'Station XX · Diablo Pass, Talim: 397 mg/L',x:'In June 2026 this was the only station above the guideline, about 1.1 times the limit. Levels had eased at the others.'}
+ ],
+ rc:[
+  {t:'Overall water quality: 76%, grade C-',x:'The 2013 Ecosystem Health Report Card gave the lake a low passing mark. Dissolved oxygen, BOD, nitrate and total coliforms stayed within Class C guidelines.'},
+  {t:'Phosphate: 59%',x:'Phosphate, a nutrient that feeds algae, scored well below full marks. The report called the lake highly eutrophic, meaning overfed with nutrients.'},
+  {t:'Chlorophyll-a: 0%',x:'Chlorophyll-a measures the amount of algae in the water. The lake scored zero, a sign of algal bloom conditions that hurt fisheries.'}
+ ],
+ po:[
+  {t:'Households: about 80% of organic pollution',x:'LLDA\'s former general manager said about four-fifths of the lake\'s biochemical oxygen demand comes from household wastewater and waste. Much of it reaches the lake through tributaries.'},
+  {t:'Industry: about 9%',x:'Factories discharge wastewater into rivers and the lake. LLDA regulates this through permits, user fees and inspections.'},
+  {t:'Agriculture: about 5%',x:'Fertilizer and animal waste wash in with runoff from farms in the watershed.'},
+  {t:'Solid waste: about 3%',x:'Garbage thrown into canals and creeks ends up in the lake and clogs waterways.'},
+  {t:'Forest and soil: about 2%',x:'Soil erosion from cleared hillsides adds silt and nutrients. Over time it also makes the lake shallower.'}
+ ],
+ par:[
+  {t:'BOD',x:'Biochemical oxygen demand: the oxygen microbes use up breaking down organic waste. Higher means more organic pollution.'},
+  {t:'Dissolved oxygen',x:'Oxygen dissolved in the water. Fish need it, and it drops when algae die and rot.'},
+  {t:'Nitrate',x:'A nutrient from fertilizer and waste. Extra nitrate feeds algae.'},
+  {t:'pH',x:'How acidic or basic the water is. Values far from the normal range stress aquatic life.'},
+  {t:'Ammonia',x:'Released as waste breaks down. It is toxic to fish at high levels.'},
+  {t:'Phosphate',x:'A nutrient from detergents, fertilizer and sewage. Often the limiting nutrient for algae.'},
+  {t:'Fecal coliform',x:'Bacteria from human and animal waste. A sign that sewage is reaching the water.'}
+ ]
+};
+var LEVEL=[
+ {d:'Aug 14, 1 p.m.',v:12.23,x:'Climbing toward the critical mark after persistent rain. It was 12.17 m at 7 a.m. LLDA urged low-lying shore communities to clear drainage and creeks.'},
+ {d:'Aug 29',v:12.58,x:'Above the 12.50 m critical high mark. LLDA told shoreline residents to stay vigilant and watch for official announcements.'},
+ {d:'Sep 1, 10 a.m.',v:12.67,x:'Heavy rain from the southwest monsoon and a low pressure area pushed the lake higher still, according to an LLDA advisory.'}
+];
+var QUIZ=[
+ {q:'What is the only outlet of Laguna de Bay?',o:['Pagsanjan River','Napindan Channel','Marikina River'],a:1,e:'The Napindan Channel links the lake to Manila Bay through the Pasig River.'},
+ {q:'About how deep is the lake on average?',o:['2.5 meters','12 meters','25 meters'],a:0,e:'Siltation has cut the average depth to about 2.5 m, from roughly 12 m decades ago.'},
+ {q:'At what water level does LLDA call it critical high?',o:['10.50 m','11.50 m','12.50 m'],a:2,e:'12.50 m is the critical high mark. 10.50 m is the critical low.'},
+ {q:'Which type of organism dominated the 2026 blooms?',o:['Cyanobacteria','Seaweed','Coral'],a:0,e:'LLDA reported cyanobacteria such as Microcystis and Anabaena.'}
+];
+
+/* ---------- helpers ---------- */
+function folio(n,dark){
+  var p=n>0?'<button type="button" data-go="'+(n-1)+'" aria-label="Previous page">‹</button>':'<span class="sp"></span>';
+  var nx=n<TOTAL-1?'<button type="button" data-go="'+(n+1)+'" aria-label="Next page">›</button>':'<span class="sp"></span>';
+  return '<footer class="folio">'+p+'<span>LAKE WATCH · '+(n+1)+'</span>'+nx+'</footer>';
+}
+function page(n,cls,html){return '<section class="page '+cls+'" data-n="'+n+'">'+html+folio(n)+'</section>';}
+function prepareExternalLinks(){if(!embedded)return;document.querySelectorAll('a[href^="http"]').forEach(function(link){link.target='_blank';link.rel='noopener noreferrer';});}
+function bars(g,rows,max,extra){
+  var h='<div class="chart" id="ch-'+g+'">'+(extra||'');
+  rows.forEach(function(r,i){h+='<button type="button" class="barrow'+(i===0?' on':'')+'" data-pick="'+g+'|'+i+'"><span>'+r.l+'</span><span class="bar"><i style="--w:'+(r.v/max*100)+'%;background:'+(r.c||'var(--water)')+'"></i></span><span class="val">'+r.vt+'</span></button>';});
+  return h+'</div><div class="card" id="det-'+g+'" aria-live="polite"><b>'+DET[g][0].t+'</b>'+DET[g][0].x+'</div>';
+}
+function acc(items,g){
+  return '<div class="acc" data-accg="'+g+'">'+items.map(function(it,i){return '<div><button type="button" class="accb" aria-expanded="false" data-acc="'+g+i+'">'+it[0]+'</button><div class="accp" id="'+g+i+'">'+it[1]+'</div></div>';}).join('')+'</div>';
+}
+
+/* ---------- faces ---------- */
+function faces(){
+ var F=[];
+ // 0 cover
+ F.push('<section class="page cover" data-n="0" style="padding:0"><svg viewBox="0 0 440 720" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><g transform="translate(0 100)"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3D48A"/><stop offset="1" stop-color="#F2A65A"/></linearGradient></defs><circle cx="330" cy="330" r="46" fill="url(#sg)" opacity=".95"/><path d="M0 395 L70 350 L120 385 L175 330 L240 395 L300 360 L440 400 L440 430 L0 430Z" fill="#1E5A56"/><rect y="400" width="440" height="220" fill="#17727F"/><g fill="none" stroke="#9BE0C3" stroke-width="2" stroke-linecap="round" opacity=".55"><path d="M30 440c30 10 60 10 90 0s60-10 90 0 60 10 90 0 60-10 90 0"/><path d="M0 475c30 10 60 10 90 0s60-10 90 0 60 10 90 0 60-10 90 0 60-10 80-4"/><path d="M40 515c30 10 60 10 90 0s60-10 90 0 60 10 90 0"/></g><path d="M300 420c20-14 50-14 70 0" stroke="#F3D48A" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/></g></svg><div class="inner"><div class="kicker" style="color:var(--mintbright)">The Laguna de Bay news magazine</div><h1 class="mast">LAKE<br><span>WATCH</span></h1><div style="margin-top:auto;display:flex;flex-direction:column;gap:14px"><ul class="cl"><li>Algal blooms spread across the lake</li><li>Fish kills hit Rizal cages</li><li>Water rises past the critical mark</li><li>Who really pollutes Laguna de Bay?</li></ul><div style="font-family:var(--mono);font-size:12px;color:#9CC4BF">ISSUE 01 · NOVEMBER 2026<br>Turn the page ›</div><div><button type="button" class="cbtn2" data-go="1">Open the issue ›</button></div></div></div></section>');
+ // 1 contents
+ var toc=[['The lake at a glance',2],['Algal blooms, April to June',3],['Fish kills in the cages',4],['Water rises past the critical mark',5],['How the lake is checked',6],['Salt in the water',7],['The 2013 report card',8],['Who pollutes the lake?',9],['Why it keeps happening',10],['What is being done',11],['Test yourself',12],['Sources',13],['Glossary',14]];
+ F.push(page(1,'light','<p class="kicker">In this issue</p><h2>Contents</h2><div style="display:flex;flex-direction:column;gap:2px">'+toc.map(function(t,i){var sec=i===0?'':'';return '<button type="button" data-go="'+t[1]+'" style="display:flex;gap:12px;align-items:baseline;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #D4E3DF;padding:8px 2px;min-height:44px;font-size:15px;color:var(--panel)"><span style="font-family:var(--mono);color:var(--teal-ink);font-weight:700;width:28px;flex:none">'+String(t[1]+1).padStart(2,"0")+'</span><span style="flex:1;font-weight:500">'+t[0]+'</span><span style="color:var(--teal-ink)">›</span></button>';}).join('')+'</div><p class="src">News, water quality trend, pollution and causes, all in one issue. Tap a line to jump.</p>'));
+ // 2 glance
+ F.push(page(2,'light','<p class="kicker">Basics</p><h2>The lake at a glance</h2><p>Laguna de Bay is the largest lake in the Philippines. It is wide and shallow, and every river around it drains into a single outlet.</p><div class="stats"><div class="stat"><div class="n"><span class="count" data-to="900" data-pre="~">0</span></div><div class="u">square kilometers of surface</div></div><div class="stat"><div class="n"><span class="count" data-to="2.5" data-dec="1">0</span> m</div><div class="u">average depth</div></div><div class="stat"><div class="n"><span class="count" data-to="21">0</span></div><div class="u">major tributary rivers</div></div><div class="stat"><div class="n"><span class="count" data-to="3820" data-comma="1">0</span></div><div class="u">square kilometers of watershed</div></div></div><div class="card"><b>One way out</b>Water leaves only through the Napindan Channel, which joins the Pasig River and flows on to Manila Bay.</div><div class="card"><b>Watched every month</b>In 2025 LLDA sampled 16 stations on the lake and 36 on its tributaries. About 15 million people lived around the lake as of 2010.</div><p class="src">Source: LLDA, Laguna de Bay and its Tributaries; LLDA 2025 Accomplishment Report.</p>'));
+ // 3 algal
+ F.push(page(3,'dark','<p class="kicker">News · LLDA advisory, 2026</p><h2>Algal blooms ran from minor to massive</h2><p>LLDA laboratory tests found more phytoplankton at several monitoring stations in April, May and June. Cyanobacteria such as <i>Microcystis</i> and <i>Anabaena</i> dominated.</p><p>The May jump may be linked to saltwater backflow: when the lake is low, tide-driven flow can push Manila Bay water up the Pasig River and into the lake.</p><svg id="flow" class="flow" viewBox="0 0 380 150" role="img" aria-label="Diagram of water flow between Laguna de Bay, the Pasig River and Manila Bay"><rect x="8" y="48" width="92" height="54" rx="10" fill="#1E5A56"/><text x="54" y="80" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Laguna de Bay</text><rect x="282" y="48" width="90" height="54" rx="10" fill="#17727F"/><text x="327" y="80" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Manila Bay</text><rect x="112" y="68" width="158" height="14" rx="7" fill="#3B8B9A" opacity=".5"/><text x="191" y="104" text-anchor="middle" fill="#9CC4BF" font-size="11">Napindan Channel · Pasig River</text><g class="fwd"><path class="anim" d="M118 75H262" stroke="#9BE0C3" stroke-width="3.5" stroke-dasharray="8 6" fill="none"/><path d="M262 75l-9-6v12z" fill="#9BE0C3"/><text x="191" y="42" text-anchor="middle" fill="#9BE0C3" font-size="12" font-weight="700">Normal flow: lake to bay</text></g><g class="bwd"><path class="anim" d="M262 75H118" stroke="#F3D48A" stroke-width="3.5" stroke-dasharray="8 6" fill="none" style="animation-direction:reverse"/><path d="M118 75l9-6v12z" fill="#F3D48A"/><text x="191" y="42" text-anchor="middle" fill="#F3D48A" font-size="12" font-weight="700">Backflow: salt water enters</text></g></svg><div class="row"><button type="button" class="chip" id="bfbtn" aria-pressed="false">Show summer backflow</button><span class="chip" style="pointer-events:none;border-style:dashed">Microcystis</span><span class="chip" style="pointer-events:none;border-style:dashed">Anabaena</span></div><p class="src">Source: LLDA public advisory, Presence of Algal Bloom in Selected Areas of Laguna de Bay.</p>'));
+ // 4 fish kills
+ F.push(page(4,'light','<p class="kicker">News · July to September 2026</p><h2>Fish kills in the cages</h2><p>Three reported incidents in Rizal this season. Tap a date to read what was reported.</p><div class="tl" id="fkbtns">'+DET.fk.map(function(d,i){return '<button type="button" class="chip'+(i===0?' on':'')+'" data-pick="fk|'+i+'">'+d.t.split(' · ')[0]+'</button>';}).join('')+'</div><div class="card" id="det-fk" aria-live="polite" style="min-height:190px"><b>'+DET.fk[0].t+'</b>'+DET.fk[0].x+'</div><div class="card"><b>Why oxygen matters</b>Blooms use up oxygen when the algae die. Shallow water, heat and calm weather make it worse, and fish in crowded cages cannot swim away.</div><p class="src">Sources: Philippine Daily Inquirer; The Star (Malaysia), Sep 1, 2026.</p>'));
+ // 5 water level
+ F.push(page(5,'dark','<p class="kicker">News · August to September 2026</p><h2>Water rises past the critical mark</h2><p>Drag the slider through three LLDA readings.</p><div class="gauge"><div class="tank" role="img" aria-label="Water level gauge"><div class="water" id="wat"></div><div class="mark" style="bottom:80%;border-color:#E5484D"><span style="color:#ff8b8f">12.50 high</span></div><div class="mark" style="bottom:0;border-color:#F2B134"><span style="color:#F2B134;top:-17px">10.50 low</span></div></div><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><div class="bigv"><span id="lvv">12.23</span> m</div><div id="lvd" style="font-family:var(--mono);font-size:13px;color:var(--mintbright)">Aug 14, 1 p.m.</div><div id="lvs" style="font-weight:700"></div></div></div><label for="lvl" style="font-family:var(--mono);font-size:12px;color:#9CC4BF">Reading: Aug 14 → Aug 29 → Sep 1</label><input type="range" id="lvl" min="0" max="2" step="1" value="0"><div class="card" id="lvx" aria-live="polite"></div><p class="src">The all-time record is 14.62 m, set in 1919. Sources: LLDA advisories via Philippine Daily Inquirer; LLDA water level page.</p>'));
+ // 6 how checked
+ F.push(page(6,'light','<p class="kicker">Water quality trend</p><h2>How the lake is checked</h2><p>LLDA samples the lake and its rivers monthly and checks them against national guidelines. Tap a parameter.</p><div class="row" id="parbtns">'+DET.par.map(function(d,i){return '<button type="button" class="chip'+(i===0?' on':'')+'" data-pick="par|'+i+'">'+d.t+'</button>';}).join('')+'</div><div class="card" id="det-par" aria-live="polite"><b>'+DET.par[0].t+'</b>'+DET.par[0].x+'</div><div class="card"><b>2025 result: still Class C</b>Monthly analysis put the lake\'s average BOD at 3 mg/L, which keeps it within the Class C standard for fisheries, recreation and agriculture.</div><div class="card"><b>The rivers tell another story</b>LLDA quarterly reports show tributaries repeatedly missing fecal coliform limits.</div><p class="src">Source: LLDA 2025 Accomplishment Report.</p>'));
+ // 7 chloride
+ F.push(page(7,'dark','<p class="kicker">Water quality trend · 2026</p><h2>Salt in the water</h2><p>The bloom advisory listed chloride readings from stations that crossed the 350 mg/L guideline. Tap a bar.</p>'+bars('cl',[{l:'Angono',v:851,vt:'851',c:'#E5484D'},{l:'Taytay',v:773,vt:'773',c:'#F2B134'},{l:'Diablo Pass',v:397,vt:'397',c:'#F2B134'}],900,'<div class="gline" style="left:calc(112px + (100% - 180px) * .3889)"><span>350 limit</span></div>')+'<div class="card"><b>What it means</b>Higher chloride at Angono and Taytay fits the backflow explanation. By June only one station was still over the limit.</div><p class="src">mg/L = milligrams per liter. Source: LLDA public advisory on algal bloom, 2026.</p>'));
+ // 8 report card
+ F.push(page(8,'light','<p class="kicker">Water quality trend · benchmark</p><h2>The 2013 report card</h2><p>LLDA and PEMSEA graded the lake\'s health in 2013. It is the benchmark many later reports compare with.</p>'+bars('rc',[{l:'Water quality',v:76,vt:'76%',c:'#F2B134'},{l:'Phosphate',v:59,vt:'59%',c:'#F2B134'},{l:'Chlorophyll-a',v:0.6,vt:'0%',c:'#E5484D'}],100)+'<div class="card"><b>Passing, but fragile</b>Oxygen, BOD, nitrate and coliforms met Class C. Nutrients and algae did not, which is why blooms keep returning.</div><p class="src">Source: 2013 Ecosystem Health Report Card, Laguna de Bay (LLDA and PEMSEA).</p>'));
+ // 9 who pollutes
+ F.push(page(9,'dark','<p class="kicker">Pollution</p><h2>Who pollutes the lake?</h2><p>Estimated shares of the pollution load, from two separate publications. Tap a bar.</p>'+bars('po',[{l:'Households',v:80,vt:'~80%',c:'#75C6A8'},{l:'Industry',v:9,vt:'9%',c:'#3B8B9A'},{l:'Agriculture',v:5,vt:'5%',c:'#597A56'},{l:'Solid waste',v:3,vt:'3%',c:'#F3D48A'},{l:'Forest, soil',v:2,vt:'2%',c:'#9BE0C3'}],85)+'<p class="src">Figures come from reports of different years, so read them as a rough picture. Sources: UNEP; WAVES policy brief.</p>'));
+ // 10 causes
+ F.push(page(10,'light','<p class="kicker">Causes</p><h2>Why it keeps happening</h2><p>Six pressures stack up on a lake that is large but shallow.</p>'+acc([
+  ['Too many nutrients','Nitrogen and phosphorus from sewage, detergents and fertilizer feed algae. The result is eutrophication: blooms, murky water and low oxygen when blooms die.'],
+  ['Silt filling the lake','Deforestation and erosion wash soil downstream. Average depth has dropped to about 2.5 m from roughly 12 m decades ago.'],
+  ['Saltwater backflow','In some summers the lake sits lower than Manila Bay. The Pasig can reverse, pushing salty water in and shifting the lake\'s chemistry.'],
+  ['Wastewater from homes and factories','Households account for most organic pollution. Untreated flows reach the lake through rivers and canals.'],
+  ['Crowded fish pens and cages','Commercial cages concentrate fish and feed. When oxygen falls they bear the heaviest losses, as in the 2026 fish kills.'],
+  ['Water hyacinth','Thick mats are a sign of an overfertilized lake, according to LLDA. They block boats and can cut oxygen under the surface.']
+ ],'ca')+'<p class="src">Sources: LLDA Watershed Greening Program; LLDA algal bloom advisory; Inquirer; UNEP.</p>'));
+ // 11 solutions
+ F.push(page(11,'dark','<p class="kicker">Action</p><h2>What is being done</h2><div class="card"><b>Monitoring</b>Monthly sampling since the 1970s: 16 lake and 36 tributary stations in 2025.</div><div class="card"><b>Cleanups and greening</b>LLDA runs big water hyacinth cleanups each April and May, and plants trees under the Watershed Greening Program to slow erosion.</div><div class="card"><b>Rules, flow and tips</b>Dischargers pay under an environmental user fee system. Floodgates stay open until the rainy season to help water flow, and in July 2026 LLDA asked the public to help trace polluters.</div><p class="kicker" style="margin-top:6px">What you can do</p><div id="chk"><button type="button" class="check" data-check="1"><span class="box"></span>Keep trash and waste out of canals and creeks</button><button type="button" class="check" data-check="1"><span class="box"></span>Report suspected dumping to LLDA</button><button type="button" class="check" data-check="1"><span class="box"></span>Follow LLDA water level and fish kill advisories</button></div><p class="src" id="chkp">0 of 3 done.</p>'));
+ // 12 quiz
+ F.push(page(12,'light','<p class="kicker">Test yourself</p><h2>Lake quiz</h2><div id="quiz">'+QUIZ.map(function(q,i){return '<div class="q"><div class="qt">'+(i+1)+'. '+q.q+'</div><div class="opts">'+q.o.map(function(o,j){return '<button type="button" class="opt" data-qa="'+i+'|'+j+'">'+o+'</button>';}).join('')+'</div><div class="qe" id="qe'+i+'"></div></div>';}).join('')+'</div><div class="card"><b>Score: <span id="score">0</span> / '+QUIZ.length+'</b><span id="scoret">Answer all four to finish.</span></div>'));
+ // 13 sources
+ F.push(page(13,'light','<p class="kicker">Reading list</p><h2>Sources</h2><p style="font-size:13px">News was gathered on Nov 23, 2026. LLDA pages: the lake facts, 2025 report, 2013 report card, water level page and the bloom advisory. Where LLDA statements were relayed by newspapers, those are listed too. Links open in a new view.</p><ol class="srcs"><li><a href="https://llda.gov.ph/presence-of-algal-bloom-in-selected-areas-of-laguna-de-bay/">LLDA: Presence of algal bloom</a></li><li><a href="https://llda.gov.ph/ldb-and-its-tributaries/">LLDA: Laguna de Bay and its tributaries</a></li><li><a href="https://llda.gov.ph/wp-content/uploads/2026/gcg/2025%20Annual%20Report_Final.pdf">LLDA: 2025 Accomplishment Report</a></li><li><a href="https://llda.gov.ph/water-level/">LLDA: Water level</a></li><li><a href="https://llda.gov.ph/national-greening-program/">LLDA: Watershed Greening Program</a></li><li><a href="https://llda.gov.ph/wp-content/uploads/dox/ldb-scorecard/ldb-report-card.pdf">2013 Ecosystem Health Report Card</a></li><li><a href="https://newsinfo.inquirer.net/2263558/llda-probes-laguna-de-bay-fish-kill">Inquirer: LLDA probes fish kill</a></li><li><a href="https://newsinfo.inquirer.net/2268922/pcg-bfar-probe-fish-kill-in-pililla-waters">Inquirer: Pililla fish kill</a></li><li><a href="https://www.thestar.com.my/aseanplus/aseanplus-news/2026/09/01/over-20000-kg-of-fish-die-in-latest-laguna-de-bay-fish-kill-in-philippines">The Star: Jala-Jala fish kill</a></li><li><a href="https://newsinfo.inquirer.net/2296708/lakeshore-communities-warned-as-laguna-de-bay-water-level-rises">Inquirer: Water level rises</a></li><li><a href="https://newsinfo.inquirer.net/2294982/laguna-de-bay-breaches-critical-mark-llda">Inquirer: Breaches critical mark</a></li><li><a href="https://newsinfo.inquirer.net/2284649/laguna-lake-water-level-nears-critical-mark-amid-persistent-rains">Inquirer: Nears critical mark</a></li><li><a href="https://newsinfo.inquirer.net/1943573/poisoned-waters-laguna-lakes-steady-crawl-to-brink-of-disaster">Inquirer: Poisoned waters (2024)</a></li><li><a href="https://www.unep.org/news-and-stories/story/paralysed-growth-lake-under-siege">UNEP: Lake under siege</a></li><li><a href="https://www.wavespartnership.org/sites/default/files/kc/WAVES%20policy%20brief%20-%20Laguna%20de%20Bay_3.pdf">WAVES policy brief</a></li><li><a href="https://newsinfo.inquirer.net/?p=859365">Inquirer: Pollution, squatting, industries (2017)</a></li><li><a href="https://www.philstar.com/kalingawan/2026/06/10/2534059/da-moves-sustain-laguna-lakes-productivity">Philstar: DA and Laguna Lake</a></li></ol>'));
+ // 14 glossary
+ F.push(page(14,'dark','<p class="kicker">Glossary</p><h2>Words to know</h2>'+acc([
+  ['Algal bloom','A fast rise in algae. Some kinds, like cyanobacteria, can turn water green, smell bad and strip oxygen when they die.'],
+  ['Eutrophication','Over-enrichment of water with nutrients, leading to blooms and low oxygen.'],
+  ['BOD','Biochemical oxygen demand. How much oxygen microbes need to break down organic waste.'],
+  ['Class C water','A national classification for fisheries, recreation and agriculture. Laguna de Bay holds this class.'],
+  ['Chloride','A salt component. Higher readings suggest seawater mixing into the lake.'],
+  ['Backflow','Water flowing the wrong way, here from Manila Bay up the Pasig River toward the lake.'],
+  ['MPN/100 mL','Most probable number per 100 milliliters, a unit for counting bacteria such as coliforms.']
+ ],'gl')));
+ // 15 back
+ F.push('<section class="page cover" data-n="15" style="padding:0"><div class="inner" style="gap:16px;justify-content:center"><div class="kicker" style="color:var(--mintbright)">Thanks for reading</div><h2 style="font-family:var(--display);font-weight:800;font-size:44px;line-height:1;margin:0;color:#fff;text-wrap:balance">Keep watching the lake.</h2><p style="color:#B9D0D0;font-size:15px">Explore station readings on the LakeWatch 3D map, then come back for the next issue. This magazine is an educational project and is not an official LLDA publication.</p><div style="display:flex;flex-wrap:wrap;gap:10px"><button type="button" class="cbtn2 ghost" data-go="0">Back to cover</button></div></div></section>');
+ return F;
+}
+
+/* ---------- build + flip engine ---------- */
+function build(){
+  book.innerHTML='';leaves=[];
+  var F=faces(),dbl=mode==='double';
+  N=dbl?TOTAL/2:TOTAL;
+  var bw=dbl?2*W:W;
+  scaler.style.width=bw+'px';scaler.style.overflow=dbl?'visible':'hidden';scaler.style.height=H+'px';
+  for(var i=0;i<N;i++){
+    var leaf=document.createElement('div');leaf.className='leaf';
+    leaf.style.width=W+'px';leaf.style.height=H+'px';leaf.style.left=(dbl?W:0)+'px';
+    var fr=dbl?F[2*i]:F[i],bk=dbl?F[2*i+1]:'';
+    leaf.innerHTML='<div class="face front">'+fr+'</div><div class="face back'+(bk?'':' blank')+'">'+bk+'</div>';
+    book.appendChild(leaf);leaves.push(leaf);
+  }
+  jump.max=(mode==='single'?N-1:N);
+  k=dbl?Math.ceil(curFace/2):curFace;
+  leaves.forEach(function(l,i){if(i<k)l.classList.add('flipped');});
+  finalZ();shift();vis(true);init();prepareExternalLinks();
+}
+function finalZ(){leaves.forEach(function(l,i){l.style.zIndex=i<k?i+1:N-i;});}
+function shift(){
+  if(mode==='double'){book.style.transform='translateX('+(k===0?-W/2:(k===N?W/2:0))+'px)';}
+  else book.style.transform='none';
+  prevB.disabled=k===0;nextB.disabled=k===N||(mode==='single'&&k===N-1);
+  jump.value=k;
+  var lab;
+  if(mode==='double'){lab=k===0?'Cover':(k===N?'Back cover':'Pages '+(2*k)+' – '+(2*k+1)+' of '+TOTAL);}
+  else lab='Page '+(k+1)+' of '+TOTAL;
+  pgl.textContent=lab;
+}
+function visible(){
+  var v=[];
+  if(mode==='double'){if(k>0)v.push(2*k-1);if(k<N)v.push(2*k);}else v.push(Math.min(k,TOTAL-1));
+  return v;
+}
+function vis(now){
+  var v=visible();
+  book.querySelectorAll('.page').forEach(function(p){var n=+p.dataset.n;var on=v.indexOf(n)>-1;p.inert=!on;if(on&&now)p.classList.add('seen');});
+  setTimeout(function(){book.querySelectorAll('.page').forEach(function(p){var n=+p.dataset.n;if(visible().indexOf(n)>-1){p.classList.add('seen');runCounts(p);}});},now?50:700);
+  curFace=v.length?(mode==='double'?(k===0?0:v[0]):v[0]):0;
+  try{history.replaceState(null,'','#p'+(curFace+1));}catch(e){}
+}
+function setK(nk){
+  nk=Math.max(0,Math.min(mode==='single'?N-1:N,nk));
+  if(nk===k)return;
+  var old=k,fwd=nk>old,idx=[],i;
+  if(fwd){for(i=old;i<nk;i++)idx.push(i);}else{for(i=old-1;i>=nk;i--)idx.push(i);}
+  k=nk;shift();vis(false);notifyParent();
+  var step=reduce?0:Math.min(130,1000/idx.length);
+  idx.forEach(function(li,j){setTimeout(function(){var l=leaves[li];l.style.zIndex=100;l.classList.toggle('flipped',fwd);setTimeout(finalZ,reduce?0:1000);},j*step);});
+}
+function go(face){setK(mode==='double'?Math.ceil(face/2):face);}
+function notifyParent(){if(!embedded||window.parent===window)return;window.parent.postMessage({source:'lakewatch-magazine',type:'state',page:curFace,total:TOTAL,atStart:k===0,atEnd:k===N},'*');}
+window.addEventListener('message',function(e){if(!embedded||e.data?.source!=='lakewatch-wall'||e.data.type!=='navigate')return;if(e.data.direction==='prev')setK(k-1);else if(e.data.direction==='next')setK(k+1);else notifyParent();});
+
+/* ---------- interactions ---------- */
+function runCounts(scope){
+  scope.querySelectorAll('.count').forEach(function(el){
+    var to=parseFloat(el.dataset.to),dec=+el.dataset.dec||0,pre=el.dataset.pre||'',comma=el.dataset.comma;
+    function fmt(v){var s=v.toFixed(dec);if(comma)s=Number(s).toLocaleString('en-US');return pre+s;}
+    if(reduce){el.textContent=fmt(to);return;}
+    var t0=performance.now();(function f(t){var p=Math.min(1,(t-t0)/900),e=1-Math.pow(1-p,3);el.textContent=fmt(to*e);if(p<1)requestAnimationFrame(f);})(t0);
+  });
+}
+var score=0,answered={};
+function init(){
+  var lvl=document.getElementById('lvl');
+  if(lvl){lvl.addEventListener('input',function(){setLevel(+lvl.value);});setLevel(0);}
+  var bf=document.getElementById('bfbtn');
+  if(bf)bf.addEventListener('click',function(){var f=document.getElementById('flow');var on=f.classList.toggle('bf');bf.classList.toggle('on',on);bf.setAttribute('aria-pressed',on);bf.textContent=on?'Show normal flow':'Show summer backflow';});
+}
+function setLevel(i){
+  var d=LEVEL[i],pct=(d.v-10.5)/2.5*100;
+  document.getElementById('wat').style.height=pct+'%';
+  document.getElementById('lvv').textContent=d.v.toFixed(2);
+  document.getElementById('lvd').textContent=d.d;
+  var s=document.getElementById('lvs');var over=d.v>12.5;
+  s.textContent=over?'Above critical high':'Below critical high';s.style.color=over?'#ff8b8f':'#F3D48A';
+  document.getElementById('lvx').textContent=d.x;
+}
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-go],[data-pick],[data-acc],[data-check],[data-qa]');
+  if(!t)return;
+  if(t.dataset.go!==undefined){go(+t.dataset.go);return;}
+  if(t.dataset.pick){
+    var a=t.dataset.pick.split('|'),g=a[0],i=+a[1],d=DET[g][i];
+    var box=document.getElementById('det-'+g);if(box)box.innerHTML='<b>'+d.t+'</b>'+d.x;
+    var scope=t.parentElement;scope.querySelectorAll('[data-pick]').forEach(function(b){b.classList.toggle('on',b===t);});
+    return;
+  }
+  if(t.dataset.acc){
+    var p=document.getElementById(t.dataset.acc),open=!p.classList.contains('open');
+    var grp=t.closest('.acc');grp.querySelectorAll('.accp').forEach(function(x){x.classList.remove('open');});
+    grp.querySelectorAll('.accb').forEach(function(x){x.setAttribute('aria-expanded','false');});
+    if(open){p.classList.add('open');t.setAttribute('aria-expanded','true');}
+    return;
+  }
+  if(t.dataset.check){
+    t.classList.toggle('done');
+    var c=document.querySelectorAll('#chk .check.done').length;
+    document.getElementById('chkp').textContent=c+' of 3 done.'+(c===3?' Thank you for looking after the lake.':'');
+    return;
+  }
+  if(t.dataset.qa){
+    var b=t.dataset.qa.split('|'),qi=+b[0],oj=+b[1];
+    if(answered[qi])return;answered[qi]=true;
+    var q=QUIZ[qi],btns=t.parentElement.querySelectorAll('.opt');
+    btns.forEach(function(x,j){x.disabled=true;if(j===q.a)x.classList.add('ok');});
+    if(oj===q.a){score++;}else t.classList.add('no');
+    document.getElementById('qe'+qi).textContent=q.e;
+    document.getElementById('score').textContent=score;
+    if(Object.keys(answered).length===QUIZ.length){document.getElementById('scoret').textContent=score===QUIZ.length?'Perfect. You know the lake.':score>=2?'Good work. Flip back to review the rest.':'Flip back through the issue and try again.';}
+  }
+});
+prevB.addEventListener('click',function(){setK(k-1);});
+nextB.addEventListener('click',function(){setK(k+1);});
+jump.addEventListener('input',function(){setK(+jump.value);});
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'&&e.target.type==='range')return;
+  if(e.key==='ArrowRight')setK(k+1);else if(e.key==='ArrowLeft')setK(k-1);
+  else if(e.key==='Home')setK(0);else if(e.key==='End')setK(N);
+});
+var sx=null,sy=null;
+stage.addEventListener('pointerdown',function(e){if(e.target.closest('button,input,a,.accb'))return;sx=e.clientX;sy=e.clientY;});
+stage.addEventListener('pointerup',function(e){
+  if(sx===null)return;var dx=e.clientX-sx,dy=e.clientY-sy;sx=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){setK(dx<0?k+1:k-1);}
+});
+
+/* ---------- layout ---------- */
+function layout(){
+  var wide=window.innerWidth>=900,m=wide?'double':'single';
+  var avail=stage.parentElement.clientWidth,bw=wide?2*W:W;
+  var s=Math.min(1,avail/bw);
+  var sh=(window.innerHeight-(embedded?16:190))/H;
+  s=Math.min(s,Math.max(.5,sh));
+  scaler.style.transform='translateX(-50%) scale('+s+')';
+  stage.style.height=(H*s+8)+'px';
+  if(m!==mode){mode=m;build();}
+}
+var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(layout,120);});
+
+var h=location.hash.match(/^#p(\d+)$/);
+if(h){curFace=Math.max(0,Math.min(TOTAL-1,+h[1]-1));}
+layout();
+if(embedded&&window.parent!==window)window.parent.postMessage({source:'lakewatch-magazine',type:'ready'},'*');
+})();
+</script>
+</body>
+</html>

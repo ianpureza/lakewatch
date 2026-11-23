@@ -1,0 +1,45 @@
+station_id,station_name,station_type,latitude_estimated,longitude_estimated,coordinate_status,source
+I,Central West Bay,Lake,14.385,121.145,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+II,East Bay,Lake,14.245,121.345,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+IV,Central Bay,Lake,14.42,121.27,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+V,Northern West Bay,Lake,14.535,121.11,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+VIII,South Bay,Lake,14.195,121.225,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+XV,San Pedro,Lake,14.39,121.065,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+XVI,Sta. Rosa,Lake,14.32,121.105,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+XVII,Sanctuary,Lake,14.275,121.27,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+XVIII,Pagsanjan,Lake,14.3,121.39,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+1,Marikina River,Tributary,14.65,121.09,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+2,Bagumbayan River (Taguig),Tributary,14.475,121.055,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+3,Buli Creek (Taguig),Tributary,14.44,121.055,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+4,Mangangate River (Muntinlupa) - Downstream,Tributary,14.405,121.055,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+5,Tunasan River (Muntinlupa) - Downstream,Tributary,14.335,121.065,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+6,San Pedro River (T2),Tributary,14.325,121.075,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+7,Biñan River,Tributary,14.305,121.095,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+8,Sta. Rosa River - Downstream,Tributary,14.26,121.125,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+8M,Sta. Rosa River - Midstream,Tributary,14.275,121.11,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+8U,Sta. Rosa River - Upstream,Tributary,14.225,121.085,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+9,Cabuyao River,Tributary,14.24,121.135,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+10,San Cristobal River (T3),Tributary,14.145,121.155,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+11,San Juan River (T5),Tributary,14.145,121.195,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+12,Molawin Creek (Los Baños),Tributary,14.175,121.245,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+13,Bay River (T9),Tributary,14.16,121.28,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+14,Pila River,Tributary,14.19,121.355,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+15,Sta. Cruz River (T6),Tributary,14.29,121.42,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+16,Pagsanjan River (T8),Tributary,14.295,121.475,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+17,Pangil River - Downstream,Tributary,14.425,121.465,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+17U,Pangil River - Upstream,Tributary,14.445,121.49,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+18,Siniloan River,Tributary,14.435,121.425,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+19,Sta. Maria River - Downstream,Tributary,14.525,121.42,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+19U,Sta. Maria River - Upstream,Tributary,14.575,121.435,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+20,Jala-jala River,Tributary,14.355,121.35,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+21,Pililla River,Tributary,14.545,121.305,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+22A,Tanay River - Brgy. Wawa,Tributary,14.56,121.29,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+22B,Tanay River - Midstream,Tributary,14.615,121.305,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+22C,Tanay River - Daranak,Tributary,14.665,121.32,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+23,Baras River,Tributary,14.565,121.245,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+24,Morong River - Downstream,Tributary,14.565,121.215,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+24U,Morong River - Upstream,Tributary,14.585,121.195,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+25,Manggahan Floodway (Taytay),Tributary,14.625,121.11,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+26,Sapang Baho River (Cainta),Tributary,14.66,121.11,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+27,Angono River,Tributary,14.595,121.16,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
+28,Teresa River,Tributary,14.655,121.205,Approximate visual/geographic estimate; NOT official GPS,LLDA Q4 2020 report page 1 map and page 2 station names
