@@ -1,0 +1,7 @@
+.git
+.vercel
+node_modules
+archive
+README.md
+SYSTEM_DOCUMENTATION.md
+*.log
