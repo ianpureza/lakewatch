@@ -10,7 +10,18 @@ function project([longitude, latitude]) {
     THREE.MathUtils.degToRad(latitude - lakeCenter.latitude) * EARTH_RADIUS
   );
 }
-function ringToShape(ring, scale, center) { return ring.map((coordinate) => project(coordinate).sub(center).multiplyScalar(scale)); }
+function simplifyRing(ring, maxPoints = 640) {
+  const valid = ring.filter((coordinate) => Number.isFinite(Number(coordinate?.[0])) && Number.isFinite(Number(coordinate?.[1])));
+  const closed = valid.length > 1 && valid[0][0] === valid.at(-1)[0] && valid[0][1] === valid.at(-1)[1];
+  const open = closed ? valid.slice(0, -1) : valid;
+  if (open.length <= maxPoints) return closed ? [...open, open[0]] : valid;
+  const sampled = [];
+  const step = open.length / maxPoints;
+  for (let index = 0; index < open.length; index += step) sampled.push(open[Math.floor(index)]);
+  sampled.push(sampled[0]);
+  return sampled;
+}
+function ringToShape(ring, scale, center, maxPoints = 640) { return simplifyRing(ring, maxPoints).map((coordinate) => project(coordinate).sub(center).multiplyScalar(scale)); }
 
 export class LakeAnalysis {
   constructor(scene) { this.scene = scene; this.group = new THREE.Group(); this.group.name = 'GeographicLagunaLakeAnalysis'; this.group.visible = false; this.active = false; this.scene.add(this.group); this.markerGroup = new THREE.Group(); this.markerGroup.name = 'LagunaLakeMonitoringStations'; this.group.add(this.markerGroup); this.placeholderObjects = ['LagunaLakeTerrainPlaceholder', 'LagunaLakeWaterPlaceholder'].map((name) => scene.getObjectByName(name)).filter(Boolean); this.scale = 1 / 11000; this.modelReady = false; this.bounds = null; this.projectedCenter = new THREE.Vector2(); this.stationEntries = []; this.labelsVisible = true; }
@@ -21,7 +32,7 @@ export class LakeAnalysis {
   buildGeoJson(collection) {
     const features = collection.features || [];
     const waterMaterial = new THREE.MeshPhysicalMaterial({ color: 0x3b8b9a, roughness: .22, metalness: .05, transparent: true, opacity: .9, side: THREE.DoubleSide });
-    const shoreMaterial = new THREE.MeshStandardMaterial({ color: 0x6e8b63, roughness: .9, side: THREE.DoubleSide });
+    const shoreMaterial = new THREE.LineBasicMaterial({ color: 0x6e8b63, transparent: true, opacity: .9 });
     const projectedCoordinates = [];
     features.forEach((feature) => {
       const geometry = feature.geometry; if (!geometry || !['Polygon', 'MultiPolygon'].includes(geometry.type)) return;
@@ -40,12 +51,12 @@ export class LakeAnalysis {
       const geometry = feature.geometry; if (!geometry || !['Polygon', 'MultiPolygon'].includes(geometry.type)) return;
       const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
       polygons.forEach((polygon) => {
-        const outer = new THREE.Shape(ringToShape(polygon[0], this.scale, center)); const holes = polygon.slice(1).map((ring) => new THREE.Path(ringToShape(ring, this.scale, center)));
+        const outerPoints = ringToShape(polygon[0], this.scale, center, 640); const outer = new THREE.Shape(outerPoints); const holes = polygon.slice(1).map((ring) => new THREE.Path(ringToShape(ring, this.scale, center, 48)));
         outer.holes = holes;
         const shapeGeometry = new THREE.ShapeGeometry(outer); shapeGeometry.rotateX(-Math.PI / 2); shapeGeometry.translate(0, 1.38, .15);
-        const water = new THREE.Mesh(shapeGeometry, waterMaterial); water.name = 'AccurateLagunaLakeWater'; water.castShadow = true; water.receiveShadow = true; this.group.add(water);
-        const shoreGeometry = new THREE.ExtrudeGeometry(outer, { depth: .08, bevelEnabled: false }); shoreGeometry.rotateX(-Math.PI / 2); shoreGeometry.translate(0, 1.29, .15);
-        const shore = new THREE.Mesh(shoreGeometry, shoreMaterial); shore.name = 'LagunaLakeShoreline'; shore.castShadow = true; shore.receiveShadow = true; this.group.add(shore);
+        const water = new THREE.Mesh(shapeGeometry, waterMaterial); water.name = 'AccurateLagunaLakeWater'; water.castShadow = false; water.receiveShadow = true; this.group.add(water);
+        const shorelineGeometry = new THREE.BufferGeometry().setFromPoints(outerPoints.map((point) => new THREE.Vector3(point.x, 1.31, .15 - point.y)));
+        const shore = new THREE.LineLoop(shorelineGeometry, shoreMaterial); shore.name = 'LagunaLakeShoreline'; this.group.add(shore);
       });
     });
   }
