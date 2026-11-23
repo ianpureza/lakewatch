@@ -4,7 +4,7 @@ import { PlayerController } from './PlayerController.js';
 import { InteractionManager } from './InteractionManager.js';
 import { LakeAnalysis } from './LakeAnalysis.js';
 import { AnalysisController } from './AnalysisController.js';
-import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview16';
+import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview17';
 
 class Game {
   constructor() {

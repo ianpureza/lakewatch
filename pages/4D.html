@@ -15,7 +15,7 @@ body{background:var(--bg1);color:var(--fg);font:14px/1.4 system-ui,-apple-system
 canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hud{position:absolute;left:10px;top:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;backdrop-filter:blur(6px);pointer-events:none;max-width:70%}
 .hud h1{font-size:15px;margin:0 0 2px}.hud .big{font-size:22px;font-weight:600;color:var(--acc)}.hud small{color:var(--mut)}
-.lbl{position:absolute;font-size:11px;color:var(--fg);text-shadow:0 0 3px var(--bg1),0 0 3px var(--bg1);pointer-events:none;white-space:nowrap;transform:translate(-50%,-100%)}
+.lbl{position:absolute;font-size:11px;color:var(--fg);text-shadow:0 0 3px var(--bg1),0 0 3px var(--bg1);pointer-events:none;white-space:nowrap;transform:translate(-50%,-100%);transition:opacity .2s,transform .2s,background-color .2s,padding .2s}.lbl.is-selected{z-index:5;padding:3px 7px;border:1px solid rgba(117,198,168,.8);border-radius:999px;background:rgba(8,30,32,.9);color:#fff6d0;font-weight:800;text-shadow:none;box-shadow:0 6px 18px rgba(0,0,0,.25);transform:translate(-50%,-120%)}
 #ctl{background:var(--panel);border-top:1px solid var(--line);padding:10px 12px;display:grid;gap:8px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 button,select{background:var(--bg2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit}
@@ -216,7 +216,7 @@ let down0=[0,0];const rc=new THREE.Raycaster(),m2=new THREE.Vector2();
 stage.addEventListener('pointerdown',e=>down0=[e.clientX,e.clientY]);
 stage.addEventListener('pointerup',e=>{if(Math.hypot(e.clientX-down0[0],e.clientY-down0[1])>5)return;const r=stage.getBoundingClientRect();m2.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);rc.setFromCamera(m2,cam);const h=rc.intersectObjects(stM);sel=h.length?h[0].object.userData.st:null;if(sel)focusStation(sel);updCard();updStations();notifySelection()});
 function projStations(){const on=document.getElementById('stn').checked,w=stage.clientWidth,h=stage.clientHeight;stG.visible=on;if(treeSpriteRoot)treeSpriteRoot.visible=document.getElementById('tr').checked;
- ST.forEach(s=>{const v=s.ball.position.clone().add(new THREE.Vector3(0,1.1,0)).project(cam);s.el.style.display=on&&v.z<1?'block':'none';s.el.style.left=(v.x*.5+.5)*w+'px';s.el.style.top=(-v.y*.5+.5)*h+'px'})}
+ ST.forEach(s=>{const v=s.ball.position.clone().add(new THREE.Vector3(0,1.1,0)).project(cam),selected=s===sel,code=s.externalCode||s.id,name=s.externalName||s.name,status=stat(rd(s,day).value)[0];s.el.classList.toggle('is-selected',selected);s.el.textContent=selected?code+' · '+name:(hover===s?code+' · '+status:code);const visible=(on||selected)&&(selected||v.z<1);s.el.style.display=visible?'block':'none';s.el.style.left=(v.x*.5+.5)*w+'px';s.el.style.top=(-v.y*.5+.5)*h+'px'})}
 // labels (reference-map pixel positions)
 const places=[['Laguna de Bay · West Bay',230,300],['East Bay',700,370],['Talim Island',418,370],['Jala-Jala',570,360],['Napindan outlet',222,100],['Binangonan',340,200],['Los Baños',385,642],['Mt. Makiling',330,690],['Santa Cruz',668,500],['Sierra Madre',820,300]].map(p=>{const q=PX(p[1],p[2]);return[p[0],q[0],q[1]]});
 const lbEls=places.map(p=>{const e=document.createElement('div');e.className='lbl';e.textContent=p[0];stage.appendChild(e);return e});
@@ -265,7 +265,7 @@ function frame(now){const dt=(now-last)/1000;last=now;tm+=dt;updateFocus(dt);
     const x=MX(p[1]),z=MZ(p[2]),y=Math.max(0,(((i==7||i==9)?110:12.8)-12.5)*EX/1000)+.3;const v=new THREE.Vector3(x,y,z).project(cam);
     e.style.display=v.z<1?'block':'none';e.style.left=(v.x*.5+.5)*w+'px';e.style.top=(-v.y*.5+.5)*h+'px'});
   requestAnimationFrame(frame)}
-async function loadActualMonitoring(){if(window.parent!==window)return;try{const response=await fetch('../api/monitoring.php?v=tree7',{cache:'no-store'});if(!response.ok)return;const data=await response.json();if(!data?.stations?.length)return;activeDate=data.dates?.at(-1)||null;activeParameter=Object.keys(data.parameters||{})[0]||'do';rebuildStations(data.stations);update()}catch{}}
+async function loadActualMonitoring(){if(window.parent!==window)return;try{const response=await fetch('../api/monitoring.php?v=tree8',{cache:'no-store'});if(!response.ok)return;const data=await response.json();if(!data?.stations?.length)return;activeDate=data.dates?.at(-1)||null;activeParameter=Object.keys(data.parameters||{})[0]||'do';rebuildStations(data.stations);update()}catch{}}
 applyEx();resize();update();requestAnimationFrame(frame);loadActualMonitoring();
 if(window.parent!==window)window.parent.postMessage({source:'lakewatch-4d',type:'ready'},'*');
 </script>
