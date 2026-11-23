@@ -10,7 +10,7 @@ export class OfficeScene {
   }
   addLighting() {
     const hemi = new THREE.HemisphereLight(0xe8f5f0, 0x4b514e, 1.65); this.scene.add(hemi);
-    const sun = new THREE.DirectionalLight(0xfff5dd, 2.5); sun.position.set(-4, 7, 5); sun.castShadow = true; sun.shadow.mapSize.set(1536, 1536); sun.shadow.camera.left = -8; sun.shadow.camera.right = 8; sun.shadow.camera.top = 8; sun.shadow.camera.bottom = -8; sun.shadow.bias = -.0002; this.scene.add(sun);
+    const sun = new THREE.DirectionalLight(0xfff5dd, 2.5); sun.position.set(-4, 7, 5); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -8; sun.shadow.camera.right = 8; sun.shadow.camera.top = 8; sun.shadow.camera.bottom = -8; sun.shadow.bias = -.0002; this.scene.add(sun);
     const fill = new THREE.PointLight(0xf4ead1, 1.15, 11); fill.position.set(0, 2.8, .5); this.scene.add(fill);
   }
   resize(width, height) { this.camera.aspect = width / height; this.camera.updateProjectionMatrix(); }

@@ -87,7 +87,7 @@ const hs=(i,j)=>{const s=Math.sin(i*127.1+j*311.7)*43758.5453;return s-Math.floo
 const vn=(x,z)=>{const i=Math.floor(x),j=Math.floor(z),u=x-i,v=z-j,a=u*u*(3-2*u),b=v*v*(3-2*v);return hs(i,j)*(1-a)*(1-b)+hs(i+1,j)*a*(1-b)+hs(i,j+1)*(1-a)*b+hs(i+1,j+1)*a*b};
 const fbm=(x,z)=>{let s=0,a=.5,f=.12;for(let o=0;o<5;o++){s+=a*vn(x*f+o*7,z*f+o*3);a*=.5;f*=2.1}return s};
 // terrain grid
-const NX=150,NZ=135,W=62,D=56,dx=W/(NX-1),dz=D/(NZ-1);
+const NX=128,NZ=116,W=62,D=56,dx=W/(NX-1),dz=D/(NZ-1);
 const H=new Float32Array(NX*NZ),isLake=new Uint8Array(NX*NZ),col=new Float32Array(NX*NZ*3);
 for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){
   const x=-W/2+i*dx,z=-D/2+j*dz,k=j*NX+i;
@@ -115,14 +115,15 @@ for(let j=1;j<NZ-1;j++)for(let i=1;i<NX-1;i++){const k=j*NX+i;if(isLake[k])conti
 }
 // three
 const cv=document.getElementById('gl'),stage=document.getElementById('stage');
-const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R.setPixelRatio(Math.min(devicePixelRatio,2));
+const lowPower=matchMedia('(max-width: 850px)').matches||devicePixelRatio>1.5;
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:!lowPower,alpha:true,powerPreference:'high-performance'});R.setPixelRatio(Math.min(devicePixelRatio,lowPower?1.25:1.5));
 const S=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,500);
 S.add(new THREE.AmbientLight(0xffffff,.65));const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(-30,50,-20);S.add(dl);
 const geo=new THREE.BufferGeometry(),pos=new Float32Array(NX*NZ*3),idx=[];
 for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i;pos[k*3]=-W/2+i*dx;pos[k*3+2]=-D/2+j*dz;if(i<NX-1&&j<NZ-1){idx.push(k,k+NX,k+1,k+1,k+NX,k+NX+1)}}
 geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));geo.setIndex(idx);
 const terrain=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true}));S.add(terrain);
-const wg=new THREE.PlaneGeometry(W,D,60,54);wg.rotateX(-Math.PI/2);
+const wg=new THREE.PlaneGeometry(W,D,48,42);wg.rotateX(-Math.PI/2);
 const wm=new THREE.Mesh(wg,new THREE.MeshPhongMaterial({color:0x2a8fc0,transparent:true,opacity:.58,shininess:90,specular:0x99ccee}));S.add(wm);
 let EX=60;
 function applyEx(){for(let k=0;k<NX*NZ;k++)pos[k*3+1]=(H[k]-12.5)*EX/1000;geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();updateTreeSprites();updStations()}
@@ -255,11 +256,11 @@ window.addEventListener('message',e=>{if(e.data?.source!=='lakewatch-app')return
 window.addEventListener('message',e=>{if(e.data?.source!=='lakewatch-app'||e.data.type!=='state')return;requestAnimationFrame(()=>{if(sel)focusStation(sel);else focusStation(null)})});
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();chart()}
 addEventListener('resize',resize);
-const wp=wg.attributes.position,w0=Float32Array.from(wp.array);let tm=0,last=performance.now(),acc=0;
+const wp=wg.attributes.position,w0=Float32Array.from(wp.array);let tm=0,last=performance.now(),acc=0,waterTick=0,layoutTick=0;
+function updateWater(now){if(now-waterTick<50)return;waterTick=now;for(let i=0;i<wp.count;i++){const x=w0[i*3],z=w0[i*3+2];wp.array[i*3+1]=Math.sin(x*.5+tm*1.4)*Math.cos(z*.4+tm)*.012*(1+EX/60)}wp.needsUpdate=true;wg.computeVertexNormals()}
 function frame(now){const dt=(now-last)/1000;last=now;tm+=dt;updateFocus(dt);
   if(playing){acc+=dt*(sc?10:22);if(acc>=1){day=(day+Math.floor(acc))%365;acc%=1;update()}}
-  for(let i=0;i<wp.count;i++){const x=w0[i*3],z=w0[i*3+2];wp.array[i*3+1]=Math.sin(x*.5+tm*1.4)*Math.cos(z*.4+tm)*.012*(1+EX/60)}
-  wp.needsUpdate=true;wg.computeVertexNormals();setCam();R.render(S,cam);projStations();
+  updateWater(now);setCam();R.render(S,cam);layoutTick+=dt;if(layoutTick>=.033){layoutTick=0;projStations()}
   const show=$('lb').checked,w=stage.clientWidth,h=stage.clientHeight;
   places.forEach((p,i)=>{const e=lbEls[i];if(!show){e.style.display='none';return}
     const x=MX(p[1]),z=MZ(p[2]),y=Math.max(0,(((i==7||i==9)?110:12.8)-12.5)*EX/1000)+.3;const v=new THREE.Vector3(x,y,z).project(cam);
