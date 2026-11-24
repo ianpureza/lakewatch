@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="LakeWatch 3D first-person environmental monitoring simulator for Laguna Lake">
   <title>LakeWatch 3D | POV Simulator</title>
-  <link rel="stylesheet" href="../css/main.css?v=overview16">
+  <link rel="stylesheet" href="../css/main.css?v=overview17">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 </head>
 <body class="simulator-page">
@@ -17,28 +17,17 @@
       <h1 id="intro-title">Laguna Lake Research Office</h1>
       <p>Explore the environmental monitoring workspace, then approach the central research table to enter the lake analysis.</p>
       <div class="controls" aria-label="Controls">
-        <span class="desktop-control"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Walk</span>
-        <span class="desktop-control"><kbd>Mouse</kbd> Look · <kbd>Wheel</kbd> Zoom · <kbd>+</kbd><kbd>-</kbd> Zoom</span>
-        <span class="desktop-control"><kbd>Shift</kbd> Fast walk</span>
-        <span class="desktop-control"><kbd>Esc</kbd> Release cursor</span>
-        <span class="mobile-control"><kbd>Touch</kbd> Drag to look · Tap arrows to walk</span>
+        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Walk</span>
+        <span><kbd>Mouse</kbd> Look · <kbd>Wheel</kbd> Zoom · <kbd>+</kbd><kbd>-</kbd> Zoom</span>
+        <span><kbd>Shift</kbd> Fast walk</span>
+        <span><kbd>Esc</kbd> Release cursor</span>
       </div>
       <button id="start-button" type="button">Start Exploring</button>
-      <p id="pointer-hint" class="hint">Desktop: click to capture the mouse · Mobile: use touch controls</p>
+      <p id="pointer-hint" class="hint">Click the button to capture the mouse.</p>
       <p class="dashboard-link">Monitoring data loads from the local LLDA CSV · use the workstation to read the system brief and LLDA monitoring activity</p>
     </section>
     <div id="crosshair" aria-hidden="true">+</div>
     <div id="interaction-prompt" class="interaction-prompt" aria-live="polite" hidden></div>
-    <div id="mobile-controls" class="mobile-controls" hidden aria-label="Mobile office controls">
-      <p class="mobile-look-hint">Drag the scene to look</p>
-      <div class="mobile-dpad" aria-label="Move through the office">
-        <button class="mobile-move mobile-move-up" type="button" data-touch-key="KeyW" aria-label="Walk forward">&uarr;</button>
-        <button class="mobile-move mobile-move-left" type="button" data-touch-key="KeyA" aria-label="Walk left">&larr;</button>
-        <button class="mobile-move mobile-move-down" type="button" data-touch-key="KeyS" aria-label="Walk backward">&darr;</button>
-        <button class="mobile-move mobile-move-right" type="button" data-touch-key="KeyD" aria-label="Walk right">&rarr;</button>
-      </div>
-      <button id="mobile-interact" class="mobile-interact" type="button">Interact</button>
-    </div>
     <section id="panel-backdrop" class="panel-backdrop" hidden>
       <article id="interaction-panel" class="interaction-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" tabindex="-1">
         <p class="eyebrow">LAKEWATCH 3D · RESEARCH OFFICE</p>
@@ -84,6 +73,6 @@
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <script type="module" src="../js/Game.js?v=overview26"></script>
+  <script type="module" src="../js/Game.js?v=overview27"></script>
 </body>
 </html>

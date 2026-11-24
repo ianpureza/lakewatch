@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { OfficeScene } from './OfficeScene.js?v=overview26';
-import { PlayerController } from './PlayerController.js?v=overview26';
-import { InteractionManager } from './InteractionManager.js?v=overview26';
+import { OfficeScene } from './OfficeScene.js?v=overview27';
+import { PlayerController } from './PlayerController.js?v=overview27';
+import { InteractionManager } from './InteractionManager.js?v=overview27';
 import { LakeAnalysis } from './LakeAnalysis.js';
 import { AnalysisController } from './AnalysisController.js';
-import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview26';
+import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview27';
 
 class Game {
   constructor() {
@@ -15,7 +15,7 @@ class Game {
     this.lakeAnalysis = new LakeAnalysis(this.office.scene); this.analysis = new AnalysisController(this.office.camera, this.renderer.domElement, this.lakeAnalysis);
     this.analysisUi = document.querySelector('#analysis-ui'); this.analysisStatus = document.querySelector('#analysis-status'); this.workspace = new AnalysisWorkspace({ camera: this.office.camera, domElement: this.renderer.domElement, lakeAnalysis: this.lakeAnalysis, ui: this.analysisUi });
     this.panelBackdrop = document.querySelector('#panel-backdrop'); this.panel = document.querySelector('#interaction-panel'); this.panelTitle = document.querySelector('#panel-title'); this.panelContent = document.querySelector('#panel-content'); this.magazinePrev = document.querySelector('#magazine-prev'); this.magazineNext = document.querySelector('#magazine-next'); this.magazineSpacer = document.querySelector('#magazine-action-spacer'); this.magazineFrame = null;
-    this.interactions = new InteractionManager(this.office.camera, this.office.scene, document.querySelector('#interaction-prompt')); this.mobileInteract = document.querySelector('#mobile-interact'); this.mobileInteract?.addEventListener('click', () => this.interactions.interact());
+    this.interactions = new InteractionManager(this.office.camera, this.office.scene, document.querySelector('#interaction-prompt'));
     this.registerInteractions();
     this.onLakeShortcut = (event) => { if (event.code !== 'KeyE' || event.repeat || !this.player.enabled || this.analysis.state !== 'EXPLORING') return; const tableCenter = new THREE.Vector3(0, this.player.position.y, .15); if (this.player.position.distanceTo(tableCenter) <= 4.5) this.openLakePanel(); };
     document.addEventListener('keydown', this.onLakeShortcut);
@@ -45,11 +45,11 @@ class Game {
   }
   openLakePanel() {
     if (!this.analysis.enter()) return;
-    this.player.enabled = false; this.player.keys.clear(); this.player.setTouchControlsVisible(false); this.interactions.setEnabled(false); document.exitPointerLock?.(); this.analysisUi.classList.remove('analysis-collapsed'); this.analysisUi.querySelector('#analysis-collapse').textContent = '×'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-label', 'Hide analysis panels'); this.analysisUi.querySelector('#analysis-collapse').title = 'Hide analysis panels'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-expanded', 'true'); this.analysisUi.hidden = false;
+    this.player.enabled = false; this.player.keys.clear(); this.interactions.setEnabled(false); document.exitPointerLock?.(); this.analysisUi.classList.remove('analysis-collapsed'); this.analysisUi.querySelector('#analysis-collapse').textContent = '×'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-label', 'Hide analysis panels'); this.analysisUi.querySelector('#analysis-collapse').title = 'Hide analysis panels'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-expanded', 'true'); this.analysisUi.hidden = false;
   }
   exitAnalysis(reacquirePointerLock) {
     if (this.analysis.state === 'EXPLORING') return;
-    this.analysis.exit(); this.analysisUi.hidden = true; this.player.enabled = true; this.player.setTouchControlsVisible(true); this.interactions.setEnabled(true);
+    this.analysis.exit(); this.analysisUi.hidden = true; this.player.enabled = true; this.interactions.setEnabled(true);
     if (reacquirePointerLock) this.player.enable(); else document.querySelector('#intro').classList.remove('hidden');
   }
   openSystemOverview() {
@@ -170,7 +170,7 @@ class Game {
   }
   openPanel(title, content) {
     if (!this.panelBackdrop.hidden) return;
-    this.player.enabled = false; this.player.keys.clear(); this.player.setTouchControlsVisible(false); this.interactions.setEnabled(false); document.exitPointerLock?.();
+    this.player.enabled = false; this.player.keys.clear(); this.interactions.setEnabled(false); document.exitPointerLock?.();
     const isMagazine = title === 'Lake Watch Magazine';
     const isSystem = title === 'LakeWatch System Overview';
     this.panelBackdrop.classList.toggle('magazine-backdrop', isMagazine);
@@ -183,13 +183,13 @@ class Game {
   }
   closePanel(reacquirePointerLock) {
     if (this.panelBackdrop.hidden) return;
-    this.panelBackdrop.hidden = true; this.panelBackdrop.classList.remove('magazine-backdrop', 'system-backdrop'); this.interactions.setEnabled(true); this.player.enabled = true; this.player.setTouchControlsVisible(true);
+    this.panelBackdrop.hidden = true; this.panelBackdrop.classList.remove('magazine-backdrop', 'system-backdrop'); this.interactions.setEnabled(true); this.player.enabled = true;
     this.panel.classList.remove('magazine-panel', 'system-panel');
     this.magazineFrame = null; this.magazinePrev.hidden = true; this.magazineNext.hidden = true; this.magazineSpacer.hidden = true;
     if (reacquirePointerLock) this.player.enable();
     else document.querySelector('#intro').classList.remove('hidden');
   }
-  startExploring() { this.player.enable(); if (this.player.isTouchDevice) this.intro.classList.add('hidden'); }
+  startExploring() { this.player.enable(); }
   showError(message) { this.loading?.remove(); this.error.hidden = false; this.error.innerHTML = `${message}<br><br><span class="dashboard-link unavailable">Monitoring dashboard unavailable · no PHP/MySQL source configured</span>`; }
   animate = () => { requestAnimationFrame(this.animate); const delta = Math.min(this.clock.getDelta(), .05); this.office?.update?.(delta); this.analysis?.update(delta); if (this.analysis?.state === 'ANALYZING') { this.analysisUi.hidden = false; this.workspace?.update(delta); } this.player?.update(delta); if (this.player?.pointerLocked) this.interactions?.update(); if (this.renderer && this.office) this.renderer.render(this.office.scene, this.office.camera); };
 }
