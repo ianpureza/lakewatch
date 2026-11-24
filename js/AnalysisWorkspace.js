@@ -3,9 +3,9 @@ import * as THREE from 'three';
 export class AnalysisWorkspace {
   constructor({ camera, domElement, lakeAnalysis, ui }) {
     this.camera = camera; this.domElement = domElement; this.lakeAnalysis = lakeAnalysis; this.ui = ui;
-    this.data = null; this.parameter = 'do'; this.date = null; this.selectedStation = null; this.chart = null; this.mapFrame = null; this.dragStart = null; this.timePlaying = false; this.timeAccumulator = 0; this.viewMode = '2d'; this.flatGeoJson = null; this.flatStationPoints = []; this.flatZoom = 1; this.leafletMap = null; this.leafletBoundary = null; this.leafletStations = null;
+    this.data = null; this.parameter = 'do'; this.date = null; this.selectedStation = null; this.chart = null; this.mapFrame = null; this.dragStart = null; this.timePlaying = false; this.timeAccumulator = 0; this.viewMode = '2d'; this.flatGeoJson = null; this.flatStationPoints = []; this.flatZoom = 1; this.leafletMap = null; this.leafletBoundary = null; this.leafletStations = null; this.thresholds = {}; this.coordinateHints = {};
     this.parameterSelect = ui.querySelector('#parameter-select'); this.dateSelect = ui.querySelector('#date-select'); this.search = ui.querySelector('#station-search'); this.stationList = ui.querySelector('#station-list'); this.status = ui.querySelector('#analysis-status'); this.stationName = ui.querySelector('#station-name'); this.stationDetails = ui.querySelector('#station-details'); this.measurementList = ui.querySelector('#measurement-list'); this.legend = ui.querySelector('#legend'); this.mapToggle = { checked: false }; this.stationToggle = ui.querySelector('#stations-toggle'); this.labelsButton = ui.querySelector('#analysis-labels'); this.timePlay = ui.querySelector('#analysis-time-play'); this.timeSlider = ui.querySelector('#analysis-time-slider'); this.timeReadout = ui.querySelector('#analysis-time-readout'); this.view3dButton = ui.querySelector('#analysis-view-3d'); this.view2dButton = ui.querySelector('#analysis-view-2d'); this.flatMapHost = ui.querySelector('#reference-map-2d'); this.flatMapCanvas = ui.querySelector('#flat-map-canvas'); this.leafletHost = ui.querySelector('#leaflet-map');
-    this.raycaster = new THREE.Raycaster();
+    this.raycaster = new THREE.Raycaster(); this.datasetFiles = ui.querySelector('#dataset-files'); this.datasetUploadStatus = ui.querySelector('#dataset-upload-status'); this.datasetFiles?.addEventListener('change', () => this.importDatasetFiles());
     this.parameterSelect.addEventListener('change', () => { this.parameter = this.parameterSelect.value; this.refresh(); });
     this.dateSelect.addEventListener('change', () => this.setDate(this.dateSelect.value));
     this.timeSlider.addEventListener('input', () => { if (this.data) this.setDate(this.data.dates[Number(this.timeSlider.value)]); });
@@ -20,19 +20,25 @@ export class AnalysisWorkspace {
   }
   async load() {
     try {
-      let response = await fetch('../api/monitoring.php?v=csv2', { cache: 'no-store' });
-      if (!response.ok) response = await fetch('../api/demo-monitoring.php?v=csv2', { cache: 'no-store' });
-      if (!response.ok) throw new Error(`Monitoring data request failed (${response.status})`);
-      this.data = await response.json();
+      try { const thresholdResponse = await fetch('../csv/llda_class_c_thresholds.csv?v=class-c1', { cache: 'no-store' }); if (thresholdResponse.ok) this.thresholds = this.parseThresholdCsv(await thresholdResponse.text()); } catch {}
+      try { const coordinateResponse = await fetch('../csv/LLDA_2020Q4_estimated_station_coordinates.csv?v=coordinates1', { cache: 'no-store' }); if (coordinateResponse.ok) this.coordinateHints = this.parseCoordinateCsv(await coordinateResponse.text()); } catch {}
+      const masterResponse = await fetch('../csv/llda_master_historical.csv?v=master2', { cache: 'no-store' });
+      if (masterResponse.ok) this.data = this.parseMonitoringCsv(await masterResponse.text(), 'llda_master_historical.csv');
+      else {
+        let response = await fetch('../api/monitoring.php?v=csv2', { cache: 'no-store' });
+        if (!response.ok) response = await fetch('../api/demo-monitoring.php?v=csv2', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Monitoring data request failed (${response.status})`);
+        this.data = await response.json();
+      }
       this.normalizeStations(this.data);
       this.notifyDataset();
       this.parameterSelect.replaceChildren(...Object.entries(this.data.parameters).map(([key, parameter]) => new Option(`${parameter.name} (${parameter.unit})`, key)));
       this.date = this.data.dates[this.data.dates.length - 1];
-      this.dateSelect.replaceChildren(...this.data.dates.map((date) => new Option(this.formatDate(date), date)));
+      this.dateSelect.replaceChildren(...this.data.dates.map((date) => new Option(this.formatObservationDate(date), date)));
       this.dateSelect.value = this.date;
       this.timeSlider.max = String(this.data.dates.length - 1);
       this.timeSlider.value = String(this.data.dates.length - 1);
-      this.timeReadout.textContent = this.date.slice(0, 7);
+      this.timeReadout.textContent = this.formatObservationDate(this.date);
       this.dateSelect.disabled = false;
       this.lakeAnalysis.setStations(this.data.stations, (station) => this.selectStation(station));
       this.selectStation(this.data.stations[0]);
@@ -72,8 +78,9 @@ export class AnalysisWorkspace {
     const parsed = new Date(`${date}T00:00:00`);
     return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
   }
+  formatObservationDate(date) { const period = this.data?.periods?.[date]; return `${this.formatDate(date)}${period ? ` · ${period}` : ''}`; }
   notifyDataset() { window.dispatchEvent(new CustomEvent('lakewatch-dataset-updated', { detail: this.data })); }
-  setDate(date) { if (!date) return; this.date = date; this.dateSelect.value = date; if (this.data) this.timeSlider.value = String(this.data.dates.indexOf(date)); this.timeReadout.textContent = date.slice(0, 7); this.refresh(); }
+  setDate(date) { if (!date) return; this.date = date; this.dateSelect.value = date; if (this.data) this.timeSlider.value = String(this.data.dates.indexOf(date)); this.timeReadout.textContent = this.formatObservationDate(date); this.refresh(); }
   selectStation(station) {
     this.selectedStation = station;
     this.stationName.textContent = station.name;
@@ -84,6 +91,7 @@ export class AnalysisWorkspace {
     const sourceUrl = /^https?:\/\//i.test(station.source_url || '') ? `<br><a class="source-link" href="${this.escapeHtml(station.source_url)}" target="_blank" rel="noreferrer">Open source record ↗</a>` : '';
     this.stationDetails.innerHTML = `<strong>${this.escapeHtml(station.code)}</strong><br>${coordinateText}<br><span class="source-note">${this.escapeHtml(station.source || 'CSV dataset')}</span>${coordinateNote}${sourceUrl}`;
     this.refreshChart();
+    const selectedParameter = this.data?.parameters?.[this.parameter]; if (selectedParameter) this.renderMeasurements(selectedParameter);
     this.postMapState();
     this.focusMapOnStation(station);
     this.renderStationList();
@@ -104,7 +112,8 @@ export class AnalysisWorkspace {
     const longitude = Number(station?.location?.longitude ?? station?.longitude);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || this.viewMode !== '2d') return;
     if (this.leafletMap) {
-      const zoom = Math.min(13, Math.max(9, this.leafletMap.getZoom()) + 1);
+      const mapSize = this.leafletMap.getSize(); if (!Number.isFinite(mapSize.x) || !Number.isFinite(mapSize.y) || mapSize.x <= 0 || mapSize.y <= 0) return;
+      const currentZoom = Number(this.leafletMap.getZoom()); const zoom = Math.min(13, Math.max(9, Number.isFinite(currentZoom) ? currentZoom : 9) + 1);
       this.leafletMap.flyTo([latitude, longitude], zoom, { animate: true, duration: .65, easeLinearity: .25 });
     } else {
       this.flatZoom = Math.max(this.flatZoom, 1.35);
@@ -113,6 +122,100 @@ export class AnalysisWorkspace {
   }
   renderMeasurements(parameter) { const observation = this.selectedStation?.observations?.[this.date]?.[this.parameter]; this.measurementList.innerHTML = `<div class="measurement-value">${Number.isFinite(Number(observation)) ? Number(observation).toFixed(2) : '—'} <small>${parameter.unit}</small></div><div class="measurement-name">${parameter.name} · ${this.date}</div><p>${parameter.description}</p>`; }
   refreshChart() { if (!this.data || !this.selectedStation || !window.Chart) return; const parameter = this.data.parameters[this.parameter]; const labels = this.data.dates.map((date) => date.slice(0, 7)); const selected = this.data.dates.map((date) => Number(this.selectedStation.observations[date]?.[this.parameter]) || null); const means = this.data.dates.map((date) => { const values = this.data.stations.map((station) => Number(station.observations[date]?.[this.parameter])).filter(Number.isFinite); return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null; }); this.chart?.destroy(); this.chart = new window.Chart(this.ui.querySelector('#history-chart'), { type: 'line', data: { labels, datasets: [{ label: this.selectedStation.code, data: selected, borderColor: '#75c6a8', backgroundColor: 'rgba(117,198,168,.16)', fill: true, tension: .3 }, { label: 'All-station mean', data: means, borderColor: '#e6bd72', borderDash: [5, 4], tension: .3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#d8e8e1', boxWidth: 12 } } }, scales: { x: { ticks: { color: '#9fb5ad' }, grid: { color: 'rgba(255,255,255,.08)' } }, y: { title: { display: true, text: `${parameter.name} (${parameter.unit})`, color: '#b8cbc5' }, ticks: { color: '#9fb5ad' }, grid: { color: 'rgba(255,255,255,.08)' } } } } }); }
+  parseCsvRows(text) {
+    const rows = []; let row = []; let cell = ''; let quoted = false;
+    for (let index = 0; index < text.length; index += 1) {
+      const character = text[index]; const next = text[index + 1];
+      if (character === '"') { if (quoted && next === '"') { cell += '"'; index += 1; } else quoted = !quoted; }
+      else if (character === ',' && !quoted) { row.push(cell.trim()); cell = ''; }
+      else if ((character === '\n' || character === '\r') && !quoted) { if (character === '\r' && next === '\n') index += 1; row.push(cell.trim()); if (row.some((value) => value !== '')) rows.push(row); row = []; cell = ''; }
+      else cell += character;
+    }
+    if (cell !== '' || row.length) { row.push(cell.trim()); if (row.some((value) => value !== '')) rows.push(row); }
+    return rows;
+  }
+  parseUploadNumber(value) { const text = String(value ?? '').trim().replace(/,/g, ''); return text === '' || ['na', 'n/a', 'null', '-'].includes(text.toLowerCase()) || !Number.isFinite(Number(text)) ? null : Number(text); }
+  normalizeUploadDate(value) { const text = String(value ?? '').trim(); return /^\d{4}-\d{2}$/.test(text) ? `${text}-01` : /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null; }
+  normalizeThresholdParameter(value) {
+    const key = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    return { dissolved_oxygen: 'do', do: 'do', biochemical_oxygen_demand: 'bod', bod: 'bod', ph: 'ph', nitrate: 'nitrate', phosphate: 'phosphate', fecal_coliform: 'fecal_coliform', ammonia: 'ammonia', chemical_oxygen_demand: 'cod', cod: 'cod', turbidity: 'turbidity', temperature: 'temperature' }[key] || key;
+  }
+  parseThresholdCsv(text) {
+    const rows = this.parseCsvRows(text); if (rows.length < 2) throw new Error('Threshold CSV has no data rows.');
+    const headers = rows.shift().map((header) => String(header).replace(/^\uFEFF/, '').trim().toLowerCase()); const index = (name) => headers.indexOf(name);
+    if (index('parameter') < 0) throw new Error('Threshold CSV requires a parameter column.');
+    const thresholds = {};
+    rows.forEach((row) => { const key = this.normalizeThresholdParameter(row[index('parameter')]); const min = this.parseUploadNumber(row[index('min_inclusive')]); const max = this.parseUploadNumber(row[index('max_inclusive')]); if (!key || (min === null && max === null)) return; thresholds[key] = { min, max, unit: String(row[index('unit')] || '').trim() }; });
+    if (!Object.keys(thresholds).length) throw new Error('Threshold CSV has no usable limits.');
+    return thresholds;
+  }
+  parseCoordinateCsv(text) {
+    const rows = this.parseCsvRows(text); if (rows.length < 2) return {};
+    const headers = rows.shift().map((header) => String(header).replace(/^\uFEFF/, '').trim().toLowerCase()); const index = (name) => headers.indexOf(name); const hints = {};
+    rows.forEach((row) => { const id = String(row[index('station_id')] || '').trim(); const latitude = this.parseUploadNumber(row[index('latitude_estimated')]); const longitude = this.parseUploadNumber(row[index('longitude_estimated')]); if (!id || latitude === null || longitude === null) return; hints[id] = { latitude, longitude, note: `${row[index('coordinate_status')] || 'Approximate coordinate estimate.'} Source: ${row[index('source')] || 'LLDA station map estimate'}.` }; });
+    return hints;
+  }
+  stationCoordinateHint(id, name, index = 0) {
+    const hints = { I: [14.43, 121.13], II: [14.37, 121.41], IV: [14.34, 121.27], V: [14.49, 121.16], VIII: [14.26, 121.32], XIII: [14.50, 121.11], XV: [14.31, 121.08], XVI: [14.26, 121.14], XVII: [14.34, 121.27], XVIII: [14.30, 121.35], XIX: [14.34, 121.09], XX: [14.39, 121.35], XXI: [14.45, 121.33], XXII: [14.42, 121.33], XXIII: [14.32, 121.42], XXIV: [14.48, 121.29] };
+    const coordinateHint = this.coordinateHints?.[String(id || '').trim()]; if (coordinateHint) return coordinateHint;
+    const point = hints[String(id || '').trim().toUpperCase()] || [14.35 + Math.sin(index * 2.4) * .08, 121.25 + Math.cos(index * 2.4) * .12];
+    return { latitude: point[0], longitude: point[1], note: `Approximate visualization anchor for ${name || id}; exact coordinates are not in the uploaded CSV.` };
+  }
+  parseMonitoringCsv(text, sourceName = 'uploaded CSV') {
+    const rows = this.parseCsvRows(text); if (rows.length < 2) throw new Error('Monitoring CSV has no data rows.');
+    const headers = rows.shift().map((header) => String(header).replace(/^\uFEFF/, '').trim().toLowerCase()); const index = (name) => headers.indexOf(name); const get = (record, name) => record[name] ?? '';
+    if (index('station_id') < 0 || index('station_name') < 0) throw new Error('Monitoring CSV requires station_id and station_name columns.');
+    const dateColumn = headers.includes('date') ? 'date' : headers.includes('sample_month') ? 'sample_month' : null; const hasYear = headers.includes('year'); if (!dateColumn && !hasYear) throw new Error('Monitoring CSV requires date, sample_month, or year.');
+    const q4 = headers.includes('dissolved_oxygen');
+    const definitions = q4 ? [
+      ['do', 'Dissolved Oxygen', 'mg/L', 'dissolved_oxygen', 'Dissolved oxygen concentration reported in the uploaded LLDA CSV.'],
+      ['bod', 'Biochemical Oxygen Demand', 'mg/L', 'bod', 'Five-day biochemical oxygen demand reported in the uploaded LLDA CSV.'],
+      ['fecal_coliform', 'Fecal Coliform', 'MPN/100 mL', 'fecal_coliform', 'Fecal coliform count reported in the uploaded LLDA CSV.'],
+      ['ph', 'pH', 'pH units', 'ph', 'Acidity/alkalinity reading reported in the uploaded LLDA CSV.'],
+      ['ammonia', 'Ammonia', 'mg/L', 'ammonia', 'Ammonia concentration reported in the uploaded LLDA CSV.'],
+      ['nitrate', 'Nitrate', 'mg/L', 'nitrate', 'Nitrate concentration reported in the uploaded LLDA CSV.'],
+      ['phosphate', 'Phosphate', 'mg/L', 'phosphate', 'Phosphate concentration reported in the uploaded LLDA CSV.'],
+      ['cod', 'Chemical Oxygen Demand', 'mg/L', 'cod', 'Chemical oxygen demand reported in the uploaded LLDA CSV.'],
+      ['turbidity', 'Turbidity', 'NTU', 'turbidity', 'Water clarity indicator reported in the uploaded LLDA CSV.'],
+      ['temperature', 'Temperature', '°C', 'temperature', 'Surface-water temperature reported in the uploaded LLDA CSV.'],
+      ['chloride', 'Chloride', 'mg/L', 'chloride', 'Chloride concentration reported in the uploaded LLDA CSV.'],
+      ['tss', 'Total Suspended Solids', 'mg/L', 'tss', 'Total suspended solids reported in the uploaded LLDA CSV.'],
+      ['tds', 'Total Dissolved Solids', 'mg/L', 'tds', 'Total dissolved solids reported in the uploaded LLDA CSV.'],
+      ['alkalinity', 'Alkalinity', 'mg/L', 'alkalinity', 'Alkalinity reported in the uploaded LLDA CSV.'],
+    ] : [
+      ['do', 'Dissolved Oxygen', 'mg/L', 'do_mg_l', 'Dissolved oxygen concentration reported in the uploaded CSV.'],
+      ['ph', 'pH', 'pH units', 'ph', 'Acidity/alkalinity reading reported in the uploaded CSV.'],
+      ['bod', 'Biochemical Oxygen Demand', 'mg/L', 'bod_mg_l', 'Five-day biochemical oxygen demand reported in the uploaded CSV.'],
+      ['cod', 'Chemical Oxygen Demand', 'mg/L', 'cod_mg_l', 'Chemical oxygen demand reported in the uploaded CSV.'],
+      ['turbidity', 'Turbidity', 'NTU', 'turbidity_ntu', 'Water clarity indicator reported in the uploaded CSV.'],
+      ['temperature', 'Temperature', '°C', 'temperature_c', 'Surface-water temperature reported in the uploaded CSV.'],
+      ['nitrate', 'Nitrate', 'mg/L', 'nitrate_mg_l', 'Nitrate concentration reported in the uploaded CSV.'],
+      ['phosphate', 'Phosphate', 'mg/L', 'phosphate_mg_l', 'Phosphate concentration reported in the uploaded CSV.'],
+      ['fecal_coliform', 'Fecal Coliform', 'MPN/100 mL', 'fecal_coliform_mpn_100ml', 'Fecal coliform count reported in the uploaded CSV.'],
+    ];
+    const stations = new Map(); const dates = new Set(); const periods = new Map(); const counts = Object.fromEntries(definitions.map(([key]) => [key, 0]));
+    rows.forEach((values, rowIndex) => {
+      const record = {}; headers.forEach((header, headerIndex) => { record[header] = String(values[headerIndex] ?? '').trim(); });
+      const stationId = get(record, 'station_id'); const stationName = get(record, 'station_name'); const rawDate = dateColumn ? get(record, dateColumn) : ''; const date = this.normalizeUploadDate(rawDate) || (hasYear && /^\d{4}$/.test(get(record, 'year')) ? `${get(record, 'year')}-01-01` : null); if (!stationId || !stationName || !date) return;
+      if (!stations.has(stationId)) { const hint = this.stationCoordinateHint(stationId, stationName, rowIndex); const latitude = this.parseUploadNumber(get(record, 'latitude')); const longitude = this.parseUploadNumber(get(record, 'longitude')); stations.set(stationId, { id: stationId, code: stationId, name: stationName, latitude: latitude ?? hint.latitude, longitude: longitude ?? hint.longitude, coordinates_approximate: latitude === null || longitude === null, coordinate_note: latitude !== null && longitude !== null ? 'Coordinates supplied by the uploaded CSV.' : hint.note, source: get(record, 'data_type') || `Uploaded ${sourceName}`, source_url: get(record, 'source_url') || null, observations: {} }); }
+      const station = stations.get(stationId); station.observations[date] ||= {};
+      definitions.forEach(([key, name, unit, column]) => { const value = this.parseUploadNumber(get(record, column)); if (value === null) return; station.observations[date][key] = value; counts[key] += 1; }); dates.add(date); periods.set(date, get(record, 'period_type') === 'annual_average' ? 'Annual average' : get(record, 'period_type') === 'monthly' ? 'Monthly observation' : get(record, 'period_type') || 'Observation');
+    });
+    const parameters = {}; definitions.forEach(([key, name, unit, column, description]) => { if (counts[key]) parameters[key] = { name, unit, description, available_values: counts[key] }; });
+    if (!stations.size || !Object.keys(parameters).length) throw new Error('Monitoring CSV has no usable station measurements.');
+    return { ok: true, simulated: false, partial: false, label: `Uploaded ${sourceName}`, dataset_label: sourceName, source_file: sourceName, row_count: rows.length, parameters, periods: Object.fromEntries(periods), dates: [...dates].sort(), stations: [...stations.values()] };
+  }
+  thresholdDescription(parameterKey) {
+    const threshold = this.thresholds?.[parameterKey]; if (!threshold) return '';
+    const limits = []; if (threshold.min !== null) limits.push(`≥ ${threshold.min}`); if (threshold.max !== null) limits.push(`≤ ${threshold.max}`); return `Class C limit: ${limits.join(' · ')}${threshold.unit ? ` ${threshold.unit}` : ''}`;
+  }
+  async importDatasetFiles() {
+    const files = [...(this.datasetFiles?.files || [])]; if (!files.length) return;
+    const thresholdFile = files.find((file) => /threshold|class.?c/i.test(file.name)); const dataFile = files.find((file) => file !== thresholdFile && /water|monitor|quality|combined/i.test(file.name)) || files.find((file) => file !== thresholdFile);
+    if (!dataFile) { if (this.datasetUploadStatus) this.datasetUploadStatus.textContent = 'Choose a water-quality CSV.'; return; }
+    try { const data = this.parseMonitoringCsv(await dataFile.text(), dataFile.name); if (thresholdFile) this.thresholds = this.parseThresholdCsv(await thresholdFile.text()); this.applyDataset(data, `uploaded ${dataFile.name}`); if (this.datasetUploadStatus) this.datasetUploadStatus.textContent = `Loaded ${data.stations.length} stations · ${data.dates.length} dates${thresholdFile ? ` · ${thresholdFile.name} applied` : ' · default thresholds retained'}.`; }
+    catch (error) { if (this.datasetUploadStatus) this.datasetUploadStatus.textContent = `Import failed · ${error.message}`; }
+  }
   applyDataset(data, sourceLabel = 'uploaded dataset') {
     if (!data?.stations?.length || !data?.dates?.length || !data?.parameters) throw new Error('Dataset must include stations, dates, and parameters.');
     this.data = data;
@@ -122,12 +225,12 @@ export class AnalysisWorkspace {
     this.date = data.dates[data.dates.length - 1];
     this.parameterSelect.replaceChildren(...Object.entries(data.parameters).map(([key, parameter]) => new Option(`${parameter.name} (${parameter.unit})`, key)));
     this.parameterSelect.value = this.parameter;
-    this.dateSelect.replaceChildren(...data.dates.map((date) => new Option(this.formatDate(date), date)));
+    this.dateSelect.replaceChildren(...data.dates.map((date) => new Option(this.formatObservationDate(date), date)));
     this.dateSelect.value = this.date;
     this.dateSelect.disabled = false;
     this.timeSlider.max = String(data.dates.length - 1);
     this.timeSlider.value = String(data.dates.length - 1);
-    this.timeReadout.textContent = this.date.slice(0, 7);
+    this.timeReadout.textContent = this.formatObservationDate(this.date);
     this.lakeAnalysis.setStations(data.stations, (station) => this.selectStation(station));
     this.selectStation(data.stations[0]);
     this.status.textContent = this.datasetStatus(data) + ` · ${sourceLabel}`;
@@ -140,17 +243,20 @@ export class AnalysisWorkspace {
   async loadFlatMap() { try { const response = await fetch('../assets/laguna-de-bay.geojson'); if (!response.ok) throw new Error('Boundary request failed'); this.flatGeoJson = await response.json(); if (this.leafletMap) { this.leafletBoundary?.remove(); this.leafletBoundary = window.L.geoJSON(this.flatGeoJson, { style: { color: '#2b665d', weight: 2, fillColor: '#4da4a1', fillOpacity: .28 } }).addTo(this.leafletMap); this.leafletMap.setView([14.35, 121.25], 9); } this.renderFlatMap(); } catch { this.flatGeoJson = null; } }
   flatRings() { const rings = []; (this.flatGeoJson?.features || []).forEach((feature) => { const geometry = feature.geometry; const polygons = geometry?.type === 'Polygon' ? [geometry.coordinates] : geometry?.type === 'MultiPolygon' ? geometry.coordinates : []; polygons.forEach((polygon) => polygon.forEach((ring) => rings.push(ring))); }); return rings; }
   flatProjection() { const rings = this.flatRings(); const coordinates = rings.flat(); if (!coordinates.length) return null; const bounds = coordinates.reduce((box, [longitude, latitude]) => ({ minLon: Math.min(box.minLon, longitude), maxLon: Math.max(box.maxLon, longitude), minLat: Math.min(box.minLat, latitude), maxLat: Math.max(box.maxLat, latitude) }), { minLon: Infinity, maxLon: -Infinity, minLat: Infinity, maxLat: -Infinity }); const rect = this.flatMapHost.getBoundingClientRect(); const width = rect.width; const height = rect.height; const scale = Math.min((width - 96) / (bounds.maxLon - bounds.minLon), (height - 96) / (bounds.maxLat - bounds.minLat)) * this.flatZoom; return { bounds, width, height, project: ([longitude, latitude]) => [width / 2 + (longitude - (bounds.minLon + bounds.maxLon) / 2) * scale, height / 2 - (latitude - (bounds.minLat + bounds.maxLat) / 2) * scale] }; }
-  statusFor(value, parameterKey) {
+  averageFor(parameterKey) { const values = this.data?.stations?.map((station) => Number(station.observations?.[this.date]?.[parameterKey])).filter(Number.isFinite) || []; return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null; }
+  statusFor(value, parameterKey, average = this.averageFor(parameterKey)) {
     if (!Number.isFinite(value)) return { label: 'NO DATA', color: '#9fb5ad', key: 'none' };
-    if (parameterKey === 'do') return value >= 5 ? { label: 'GOOD', color: '#3fbf6b', key: 'good' } : value >= 3 ? { label: 'FAIR', color: '#f2b134', key: 'fair' } : { label: 'POOR', color: '#e5484d', key: 'poor' };
-    if (parameterKey === 'ph') return value >= 6.5 && value <= 8.5 ? { label: 'IN RANGE', color: '#3fbf6b', key: 'good' } : value >= 6 && value <= 9 ? { label: 'REVIEW', color: '#f2b134', key: 'fair' } : { label: 'OUT OF RANGE', color: '#e5484d', key: 'poor' };
-    if (['bod', 'cod', 'turbidity'].includes(parameterKey)) {
-      const goodLimit = parameterKey === 'bod' ? 5 : 25;
-      const reviewLimit = parameterKey === 'bod' ? 10 : 50;
-      return value <= goodLimit ? { label: 'GOOD', color: '#3fbf6b', key: 'good' } : value <= reviewLimit ? { label: 'FAIR', color: '#f2b134', key: 'fair' } : { label: 'POOR', color: '#e5484d', key: 'poor' };
+    const threshold = this.thresholds?.[parameterKey];
+    if (threshold) {
+      const belowMinimum = threshold.min !== null && value < threshold.min;
+      const aboveMaximum = threshold.max !== null && value > threshold.max;
+      if (belowMinimum || aboveMaximum) return { label: aboveMaximum ? 'EXCEEDS CLASS C' : 'BELOW CLASS C', color: '#e5484d', key: 'poor' };
+      if (Number.isFinite(average) && threshold.max !== null && value > average) return { label: 'HIGHER THAN AVERAGE', color: '#f2b134', key: 'high' };
+      if (Number.isFinite(average) && threshold.min !== null && value < average) return { label: 'WORSE LEVEL', color: '#9a6b3f', key: 'worse' };
+      return { label: 'GOOD', color: '#3fbf6b', key: 'good' };
     }
-    if (parameterKey === 'temperature') return value >= 24 && value <= 32 ? { label: 'IN RANGE', color: '#3fbf6b', key: 'good' } : value >= 20 && value <= 35 ? { label: 'REVIEW', color: '#f2b134', key: 'fair' } : { label: 'OUT OF RANGE', color: '#e5484d', key: 'poor' };
-    return { label: 'RECORDED', color: '#75c6a8', key: 'recorded' };
+    if (Number.isFinite(average)) return value > average ? { label: 'HIGHER THAN AVERAGE', color: '#f2b134', key: 'high' } : value < average ? { label: 'WORSE LEVEL', color: '#9a6b3f', key: 'worse' } : { label: 'GOOD', color: '#3fbf6b', key: 'good' };
+    return { label: 'GOOD', color: '#3fbf6b', key: 'good' };
   }
   escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character])); }
   renderLeafletMap() { if (!this.leafletMap || !this.data) return; if (this.leafletMap._tooltip) this.leafletMap.closeTooltip(); if (this.leafletMap._popup) this.leafletMap.closePopup(); const tooltipPane = this.leafletMap.getPanes().tooltipPane; if (tooltipPane) tooltipPane.replaceChildren(); this.leafletStations.clearLayers(); const values = this.data.stations.map((station) => Number(station.observations?.[this.date]?.[this.parameter])).filter(Number.isFinite); const min = Math.min(...values); const max = Math.max(...values); const parameter = this.data.parameters[this.parameter]; this.data.stations.forEach((station) => { const value = Number(station.observations?.[this.date]?.[this.parameter]); const ratio = Number.isFinite(value) && max > min ? (value - min) / (max - min) : .5; const selected = station.id === this.selectedStation?.id; const marker = window.L.circleMarker([Number(station.latitude), Number(station.longitude)], { radius: selected ? 9 : 6, color: selected ? '#fff2c4' : '#0b3036', weight: selected ? 3 : 1.5, fillColor: selected ? '#f3d48a' : `hsl(${155 - ratio * 120} 70% 55%)`, fillOpacity: .95 }); const observation = Number.isFinite(value) ? `${value.toFixed(2)} ${parameter.unit}` : 'No reading'; const status = this.statusFor(value, this.parameter); const label = `<strong>${this.escapeHtml(station.code)} · ${this.escapeHtml(station.name)}</strong><br>${Number(station.latitude).toFixed(4)}° N, ${Number(station.longitude).toFixed(4)}° E<br>${this.escapeHtml(parameter.name)}: ${observation}<br><b style="color:${status.color}">${status.label}</b>`; marker.bindTooltip(label, { sticky: true, direction: 'top', opacity: .96, className: 'lakewatch-tooltip', offset: [0, -8] }); marker.bindPopup(label); marker.on('click', () => this.selectStation(station)); marker.addTo(this.leafletStations); if (selected) marker.openTooltip(); }); if (this.viewMode === '2d') requestAnimationFrame(() => this.leafletMap.invalidateSize()); }
@@ -159,9 +265,52 @@ export class AnalysisWorkspace {
     const values = this.data.stations.map((station) => Number(station.observations?.[this.date]?.[this.parameter])).filter(Number.isFinite); const min = Math.min(...values); const max = Math.max(...values); this.flatStationPoints = []; this.data.stations.forEach((station) => { const [x, y] = projection.project([Number(station.longitude), Number(station.latitude)]); const value = Number(station.observations?.[this.date]?.[this.parameter]); const ratio = Number.isFinite(value) && max > min ? (value - min) / (max - min) : .5; const selected = station.id === this.selectedStation?.id; this.flatStationPoints.push({ station, x, y }); context.beginPath(); context.arc(x, y, selected ? 8 : 5.5, 0, Math.PI * 2); context.fillStyle = selected ? '#f3d48a' : `hsl(${155 - ratio * 120} 70% 62%)`; context.fill(); context.strokeStyle = selected ? '#fff6d0' : '#06222a'; context.lineWidth = selected ? 2.5 : 1.5; context.stroke(); if (selected || this.flatZoom > 1.35) { context.fillStyle = '#e6f4ef'; context.font = selected ? '700 12px system-ui' : '10px system-ui'; context.fillText(selected ? station.code + ' · ' + station.name : station.code, x + 9, y - 8); } }); context.fillStyle = '#b9d9d0'; context.font = '700 12px system-ui'; context.fillText('LAGUNA DE BAY · 2D MONITORING VIEW', 18, 26); context.font = '11px system-ui'; context.fillStyle = '#86b6aa'; context.fillText(`${this.data.stations.length} stations · ${this.date || '—'}`, 18, 43); }
   pickFlatStation(event) { if (!this.flatStationPoints.length) return; const rect = this.flatMapCanvas.getBoundingClientRect(); const x = event.clientX - rect.left; const y = event.clientY - rect.top; const nearest = this.flatStationPoints.reduce((best, point) => { const distance = Math.hypot(point.x - x, point.y - y); return !best || distance < best.distance ? { station: point.station, distance } : best; }, null); if (nearest && nearest.distance <= 18) this.selectStation(nearest.station); }
   setView(mode) { this.viewMode = mode === '2d' ? '2d' : '4d'; const is2d = this.viewMode === '2d'; this.view3dButton.classList.toggle('is-active', !is2d); this.view2dButton.classList.toggle('is-active', is2d); this.view3dButton.setAttribute('aria-pressed', String(!is2d)); this.view2dButton.setAttribute('aria-pressed', String(is2d)); const flatMap = this.ui.querySelector('#reference-map-2d'); const temporalMap = this.ui.querySelector('#reference-map'); flatMap.hidden = !is2d; temporalMap.hidden = is2d; if (is2d) { this.initLeafletMap(); this.renderFlatMap(); requestAnimationFrame(() => { if (this.leafletMap) { this.leafletMap._size = null; this.leafletMap.invalidateSize({ pan: false }); this.leafletMap.setView([14.35, 121.25], 9, { animate: false }); } this.renderLeafletMap(); if (this.selectedStation) this.focusMapOnStation(this.selectedStation); }); } else this.postMapState(); }
-  initMap() { const host = this.ui.querySelector('#reference-map'); host.replaceChildren(); this.mapFrame = document.createElement('iframe'); this.mapFrame.title = 'Laguna Lake 4D terrain and station analysis'; this.mapFrame.src = './4d-2.html?embedded=1&v=zones2'; this.mapFrame.loading = 'eager'; this.mapFrame.addEventListener('load', () => this.postMapState()); host.append(this.mapFrame); }
+  initMap() { const host = this.ui.querySelector('#reference-map'); host.replaceChildren(); this.mapFrame = document.createElement('iframe'); this.mapFrame.title = 'Laguna Lake 4D terrain and station analysis'; this.mapFrame.src = './4d-2.html?embedded=1&v=zones8'; this.mapFrame.loading = 'eager'; this.mapFrame.addEventListener('load', () => { this.postMapState(); this.postThresholdState(); }); host.append(this.mapFrame); }
+  postThresholdState() { if (!this.mapFrame?.contentWindow) return; this.mapFrame.contentWindow.postMessage({ source: 'lakewatch-app', type: 'thresholds', thresholds: this.thresholds }, '*'); }
   postMapState() { this.renderFlatMap(); if (!this.mapFrame?.contentWindow || !this.data || !this.date) return; this.mapFrame.contentWindow.postMessage({ source: 'lakewatch-app', type: 'state', date: this.date, parameter: this.parameter, stations: this.data.stations.map((station) => ({ id: station.id, code: station.code, name: station.name, latitude: Number(station.latitude), longitude: Number(station.longitude), location: station.location, observations: station.observations })), selectedStation: this.selectedStation ? { id: this.selectedStation.id, code: this.selectedStation.code, name: this.selectedStation.name, latitude: this.selectedStation.latitude, longitude: this.selectedStation.longitude, location: this.selectedStation.location } : null }, '*'); }
   toggleMap(visible) { this.setView(visible ? '4d' : '2d'); }
   update(delta = 0) { this.labelAccumulator = (this.labelAccumulator || 0) + delta; if (this.labelAccumulator >= .033) { this.labelAccumulator = 0; this.lakeAnalysis.updateLabels(this.camera); } if (!this.timePlaying || !this.data?.dates?.length) return; this.timeAccumulator += delta; if (this.timeAccumulator < .85) return; this.timeAccumulator = 0; const nextIndex = (Number(this.timeSlider.value) + 1) % this.data.dates.length; this.setDate(this.data.dates[nextIndex]); }
   dispose() { this.chart?.destroy(); this.mapFrame?.remove(); window.removeEventListener('message', this.on4DMessage); this.lakeAnalysis.stationEntries.forEach(({ label }) => label.remove()); }
 }
+
+AnalysisWorkspace.prototype.renderLeafletMap = function() {
+  if (!this.leafletMap || !this.data) return;
+  if (this.leafletMap._tooltip) this.leafletMap.closeTooltip();
+  if (this.leafletMap._popup) this.leafletMap.closePopup();
+  const tooltipPane = this.leafletMap.getPanes().tooltipPane; if (tooltipPane) tooltipPane.replaceChildren();
+  this.leafletStations.clearLayers(); const parameter = this.data.parameters[this.parameter]; const average = this.averageFor(this.parameter);
+  this.data.stations.forEach((station) => {
+    const latitude = Number(station.latitude); const longitude = Number(station.longitude); if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    const value = Number(station.observations?.[this.date]?.[this.parameter]); const status = this.statusFor(value, this.parameter, average); const selected = station.id === this.selectedStation?.id;
+    const marker = window.L.circleMarker([latitude, longitude], { radius: selected ? 9 : 6, color: selected ? '#eff8ff' : '#06152f', weight: selected ? 3 : 1.5, fillColor: status.color, fillOpacity: .95 });
+    const observation = Number.isFinite(value) ? `${value.toFixed(2)} ${parameter.unit}` : 'No reading'; const label = `<strong>${this.escapeHtml(station.code)} · ${this.escapeHtml(station.name)}</strong><br>${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E<br>${this.escapeHtml(parameter.name)}: ${observation}<br><b style="color:${status.color}">${status.label}</b>`;
+    marker.bindTooltip(label, { sticky: true, direction: 'top', opacity: .96, className: 'lakewatch-tooltip', offset: [0, -8] }); marker.bindPopup(label); marker.on('click', () => this.selectStation(station)); marker.addTo(this.leafletStations); if (selected) marker.openTooltip();
+  });
+  if (this.viewMode === '2d') requestAnimationFrame(() => this.leafletMap.invalidateSize());
+};
+
+AnalysisWorkspace.prototype.renderFlatMap = function() {
+  if (this.viewMode !== '2d') return; if (this.leafletMap) { this.renderLeafletMap(); return; } if (!this.flatMapCanvas || !this.flatGeoJson || !this.data) return;
+  const projection = this.flatProjection(); if (!projection?.width || !projection.height) return; const dpr = Math.min(window.devicePixelRatio || 1, 2); this.flatMapCanvas.width = Math.round(projection.width * dpr); this.flatMapCanvas.height = Math.round(projection.height * dpr); const context = this.flatMapCanvas.getContext('2d'); context.setTransform(dpr, 0, 0, dpr, 0, 0); context.clearRect(0, 0, projection.width, projection.height); context.fillStyle = '#071d25'; context.fillRect(0, 0, projection.width, projection.height); context.strokeStyle = 'rgba(142,214,245,.12)'; context.lineWidth = 1;
+  for (let x = 24; x < projection.width; x += 48) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x, projection.height); context.stroke(); } for (let y = 24; y < projection.height; y += 48) { context.beginPath(); context.moveTo(0, y); context.lineTo(projection.width, y); context.stroke(); }
+  this.flatRings().forEach((ring) => { context.beginPath(); ring.forEach((coordinate, index) => { const [x, y] = projection.project(coordinate); index ? context.lineTo(x, y) : context.moveTo(x, y); }); context.closePath(); context.fillStyle = '#247782'; context.fill(); context.strokeStyle = '#a4d5bd'; context.lineWidth = 1.5; context.stroke(); });
+  const average = this.averageFor(this.parameter); this.flatStationPoints = []; this.data.stations.forEach((station) => { const latitude = Number(station.latitude); const longitude = Number(station.longitude); if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return; const [x, y] = projection.project([longitude, latitude]); const value = Number(station.observations?.[this.date]?.[this.parameter]); const status = this.statusFor(value, this.parameter, average); const selected = station.id === this.selectedStation?.id; this.flatStationPoints.push({ station, x, y }); context.beginPath(); context.arc(x, y, selected ? 8 : 5.5, 0, Math.PI * 2); context.fillStyle = status.color; context.fill(); context.strokeStyle = selected ? '#eff8ff' : '#06152f'; context.lineWidth = selected ? 2.5 : 1.5; context.stroke(); if (selected || this.flatZoom > 1.35) { context.fillStyle = '#eff8ff'; context.font = selected ? '700 12px system-ui' : '10px system-ui'; context.fillText(selected ? `${station.code} · ${station.name} · ${status.label}` : station.code, x + 9, y - 8); } }); context.fillStyle = '#b9d9d0'; context.font = '700 12px system-ui'; context.fillText('LAGUNA DE BAY · 2D MONITORING VIEW', 18, 26); context.font = '11px system-ui'; context.fillStyle = '#86b6aa'; context.fillText(`${this.data.stations.length} stations · ${this.date || '—'}`, 18, 43);
+};
+
+AnalysisWorkspace.prototype.postMapState = function() {
+  this.renderFlatMap(); if (!this.mapFrame?.contentWindow || !this.data || !this.date) return;
+  const stations = this.data.stations.map((station) => { const value = Number(station.observations?.[this.date]?.[this.parameter]); const status = this.statusFor(value, this.parameter); return { id: station.id, code: station.code, name: station.name, latitude: Number(station.latitude), longitude: Number(station.longitude), location: station.location, observations: station.observations, status: { date: this.date, parameter: this.parameter, label: status.label, color: status.color, key: status.key } }; });
+  this.mapFrame.contentWindow.postMessage({ source: 'lakewatch-app', type: 'state', date: this.date, parameter: this.parameter, stations, selectedStation: this.selectedStation ? { id: this.selectedStation.id, code: this.selectedStation.code, name: this.selectedStation.name, latitude: this.selectedStation.latitude, longitude: this.selectedStation.longitude, location: this.selectedStation.location } : null }, '*');
+};
+
+AnalysisWorkspace.prototype.renderMeasurements = function(parameter) {
+  const observation = this.selectedStation?.observations?.[this.date]?.[this.parameter]; const value = Number(observation); const status = this.statusFor(value, this.parameter); const limit = this.thresholdDescription(this.parameter); const valueText = Number.isFinite(value) ? value.toFixed(3).replace(/0+$/, '').replace(/\.$/, '') : '—';
+  this.measurementList.innerHTML = `<div class="measurement-value">${valueText} <small>${parameter.unit}</small></div><div class="measurement-name">${parameter.name} · ${this.date}</div><div class="measurement-status" style="color:${status.color}">${status.label}</div><p>${parameter.description}</p>${limit ? `<small class="threshold-note">${limit}</small>` : ''}`;
+};
+
+AnalysisWorkspace.prototype.refreshChart = function() {
+  if (!this.data || !this.selectedStation || !window.Chart) return;
+  const parameter = this.data.parameters[this.parameter]; const labels = this.data.dates.map((date) => date.slice(0, 7)); const selected = this.data.dates.map((date) => Number(this.selectedStation.observations[date]?.[this.parameter]) || null); const means = this.data.dates.map((date) => { const values = this.data.stations.map((station) => Number(station.observations[date]?.[this.parameter])).filter(Number.isFinite); return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null; }); const threshold = this.thresholds?.[this.parameter];
+  const safeZonePlugin = { id: 'classCSafeZone', beforeDatasetsDraw: (chart) => { if (!threshold) return; const { ctx, chartArea, scales } = chart; if (!chartArea || !scales.y) return; const lower = threshold.min === null ? scales.y.min : Number(threshold.min); const upper = threshold.max === null ? scales.y.max : Number(threshold.max); const yTop = scales.y.getPixelForValue(upper); const yBottom = scales.y.getPixelForValue(lower); const top = Math.min(yTop, yBottom); const height = Math.abs(yBottom - yTop); ctx.save(); ctx.fillStyle = 'rgba(35,133,201,.14)'; ctx.fillRect(chartArea.left, top, chartArea.right - chartArea.left, height); ctx.strokeStyle = 'rgba(142,214,245,.75)'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1; ctx.strokeRect(chartArea.left, top, chartArea.right - chartArea.left, height); ctx.restore(); } };
+  this.chart?.destroy(); this.chart = new window.Chart(this.ui.querySelector('#history-chart'), { type: 'line', data: { labels, datasets: [{ label: this.selectedStation.code, data: selected, borderColor: '#2385c9', backgroundColor: 'rgba(35,133,201,.16)', pointBackgroundColor: '#55b9ec', pointBorderColor: '#eff8ff', fill: false, tension: .3 }, { label: 'All-station mean', data: means, borderColor: '#f2a65a', backgroundColor: 'rgba(242,166,90,.14)', pointBackgroundColor: '#f2a65a', pointBorderColor: '#fff1d6', borderDash: [5, 4], fill: false, tension: .3 }] }, plugins: [safeZonePlugin], options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#d8e8e1', boxWidth: 12 } }, classCSafeZone: { min: threshold?.min ?? null, max: threshold?.max ?? null } }, scales: { x: { ticks: { color: '#9fb5ad' }, grid: { color: 'rgba(255,255,255,.08)' } }, y: { title: { display: true, text: `${parameter.name} (${parameter.unit})`, color: '#b8cbc5' }, ticks: { color: '#9fb5ad' }, grid: { color: 'rgba(255,255,255,.08)' }, suggestedMin: threshold?.min ?? undefined, suggestedMax: threshold?.max ?? undefined } } } });
+};

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="LakeWatch 3D first-person environmental monitoring simulator for Laguna Lake">
   <title>LakeWatch 3D | POV Simulator</title>
-  <link rel="stylesheet" href="../css/main.css?v=overview17">
+  <link rel="stylesheet" href="../css/main.css?v=overview24">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 </head>
 <body class="simulator-page">
@@ -24,6 +24,10 @@
       </div>
       <button id="start-button" type="button">Start Exploring</button>
       <p id="pointer-hint" class="hint">Click the button to capture the mouse.</p>
+      <aside id="mobile-advice" class="mobile-advice" aria-live="polite">
+        <strong>Mobile access</strong>
+        <p>For the most reliable experience, open LakeWatch in your phone’s web browser or choose <em>Open in browser</em> / <em>Request Desktop Website</em> from the current app. The POV room is designed for keyboard and mouse; on mobile, use landscape orientation and the 2D analysis and magazine views.</p>
+      </aside>
       <p class="dashboard-link">Monitoring data loads from the local LLDA CSV · use the workstation to read the system brief and LLDA monitoring activity</p>
     </section>
     <div id="crosshair" aria-hidden="true">+</div>
@@ -33,12 +37,12 @@
         <p class="eyebrow">LAKEWATCH 3D · RESEARCH OFFICE</p>
         <h2 id="panel-title"></h2>
         <div id="panel-content"></div>
-        <div class="panel-actions"><button id="magazine-prev" class="magazine-nav" type="button" aria-label="Previous page" title="Previous page" hidden>‹</button><button id="magazine-next" class="magazine-nav" type="button" aria-label="Next page" title="Next page" hidden>›</button><span id="magazine-action-spacer" class="magazine-action-spacer" hidden></span><button id="panel-close" type="button">Close</button><button id="panel-resume" type="button">Resume Exploration</button></div>
+        <div class="panel-actions"><button id="magazine-prev" class="magazine-nav" type="button" aria-label="Previous page" title="Previous page" hidden>‹</button><button id="magazine-next" class="magazine-nav" type="button" aria-label="Next page" title="Next page" hidden>›</button><span id="magazine-action-spacer" class="magazine-action-spacer" hidden></span><button id="panel-close" type="button" aria-label="Close magazine" title="Close magazine">Close</button><button id="panel-resume" type="button" aria-label="Resume exploration" title="Resume exploration">Resume Exploration</button></div>
       </article>
     </section>
     <section id="analysis-ui" class="analysis-ui" hidden aria-label="Laguna Lake environmental analysis">
-      <button id="analysis-collapse" class="analysis-collapse" type="button" aria-expanded="true" aria-label="Hide analysis panels" title="Hide analysis panels">&times;</button>
       <button id="analysis-back" class="analysis-back" type="button">Back to Simulation Room</button>
+      <div class="pin-legend" aria-label="Station pin status legend"><span><i class="pin-swatch pin-good"></i>Good</span><span><i class="pin-swatch pin-high"></i>Higher average</span><span><i class="pin-swatch pin-limit"></i>Exceeds Class C</span><span><i class="pin-swatch pin-worse"></i>Worse level</span><span><i class="pin-swatch pin-no-data"></i>No data</span></div>
       <aside class="analysis-sidebar analysis-left">
         <p class="eyebrow">4D/2D ANALYSIS · STAGE 3</p>
         <h2>Laguna Lake</h2>
@@ -53,6 +57,12 @@
         <div class="analysis-view-switch" role="group" aria-label="Analysis view"><button id="analysis-view-3d" type="button" aria-pressed="false">4D View</button><button id="analysis-view-2d" class="is-active" type="button" aria-pressed="true">2D Map</button></div>
         <p id="analysis-status" class="analysis-status">Loading geographic boundary…</p>
         <p class="demo-badge">SIMULATED DATA — EDUCATIONAL DEMONSTRATION</p>
+        <section class="dataset-import" aria-labelledby="dataset-import-title">
+          <p id="dataset-import-title" class="dataset-import-title">IMPORT MONITORING CSV</p>
+          <label for="dataset-files">Choose water-quality data and optional Class C thresholds</label>
+          <input id="dataset-files" type="file" accept=".csv,text/csv" multiple>
+          <p id="dataset-upload-status" class="dataset-upload-status">Default local dataset loaded. Imported files stay in this browser session.</p>
+        </section>
       </aside>
       <aside class="analysis-sidebar analysis-right">
         <p class="eyebrow">SELECTED STATION</p>
@@ -73,6 +83,6 @@
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <script type="module" src="../js/Game.js?v=overview28"></script>
+  <script type="module" src="../js/Game.js?v=overview42"></script>
 </body>
 </html>

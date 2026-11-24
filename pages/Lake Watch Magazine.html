@@ -10,18 +10,18 @@
 <style>
 /* Layout idea: a dark reading room with a 3D flipbook in the middle; paper pages alternate light and dark, charts are tappable. */
 :root{
-  --panel:#0F2021; --panel2:#162728; --control:#193536;
-  --mint:#75C6A8; --mintbright:#9BE0C3; --gold:#F3D48A;
-  --water:#3B8B9A; --land:#597A56; --mist:#DCE3E4;
-  --good:#3FBF6B; --amber:#F2B134; --poor:#E5484D;
-  --paper:#F3F8F6; --teal-ink:#2A6670;
+  --panel:#071A3A; --panel2:#0C2A55; --control:#123E70;
+  --mint:#55B9EC; --mintbright:#B5E7FF; --gold:#DBEFFF;
+  --water:#4DA9DC; --land:#6D8FB8; --mist:#EAF6FF;
+  --good:#63C9F5; --amber:#A8D8F5; --poor:#7E9FBE;
+  --paper:#F5FAFF; --teal-ink:#1B5A86;
   --display:'Bricolage Grotesque',system-ui,sans-serif;
   --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
-body{background:radial-gradient(1200px 600px at 50% -10%,#1d3b3d 0%,var(--panel) 60%);color:var(--mist);font-family:var(--body);overflow-x:hidden}
+body{background:radial-gradient(1200px 600px at 50% -10%,#123E70 0%,var(--panel) 60%);color:var(--mist);font-family:var(--body);overflow-x:hidden}
 a{color:inherit}
 button{font-family:inherit;cursor:pointer}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -133,6 +133,13 @@ input[type=range]{width:100%;accent-color:var(--mint);height:28px}
 .flow .anim{animation:dash 1.2s linear infinite}
 
 .cover{background:linear-gradient(180deg,#0B1A1B 0%,#10393F 55%,#0F2021 100%);color:#fff;position:relative}
+.cover{background:linear-gradient(180deg,#06152F 0%,#0C386D 55%,#071A3A 100%)}
+.cover svg [fill="#1E5A56"]{fill:#154C8B!important}.cover svg [fill="#17727F"]{fill:#2D8FC1!important}.cover svg [fill="#F3D48A"]{fill:#B5E7FF!important}.cover svg [stop-color="#F3D48A"]{stop-color:#B5E7FF!important}.cover svg [stop-color="#F2A65A"]{stop-color:#55B9EC!important}.cover svg [stroke="#9BE0C3"]{stroke:#A7E4FF!important}
+.cover.image-cover{padding:0;background:#06152F;isolation:isolate}
+.cover-art{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;object-position:center;user-select:none}
+.cover-action{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:2;display:flex;justify-content:center}
+.cover-action .cbtn2{white-space:nowrap;box-shadow:0 8px 20px rgba(0,12,40,.35)}
+.cover-action .cbtn2.ghost{background:rgba(6,21,47,.7)}
 .cover .inner{position:absolute;inset:0;padding:34px 32px;display:flex;flex-direction:column}
 .mast{font-family:var(--display);font-weight:800;font-size:86px;line-height:.86;letter-spacing:-.04em;margin:6px 0 0}
 .mast span{color:var(--mint)}
@@ -145,7 +152,7 @@ input[type=range]{width:100%;accent-color:var(--mint);height:28px}
 @media (prefers-reduced-motion:reduce){.leaf,.book,.bar i,.water{transition:none}.flow .anim{animation:none}}
 
 /* Wall-display mode: the magazine becomes a focused, edge-to-edge reader inside the simulator. */
-body.embedded{background:radial-gradient(1000px 520px at 50% -12%,#1d4a4c 0%,#071617 66%);overflow:hidden}
+body.embedded{background:radial-gradient(1000px 520px at 50% -12%,#14538C 0%,#04112A 66%);overflow:hidden}
 body.embedded .top,body.embedded .controls,body.embedded .hint{display:none}
 body.embedded .wrap{width:100%;max-width:none;padding:0}
 body.embedded .stage{height:100dvh;min-height:0}
@@ -208,13 +215,20 @@ var DET={
   {t:'Forest and soil: about 2%',x:'Soil erosion from cleared hillsides adds silt and nutrients. Over time it also makes the lake shallower.'}
  ],
  par:[
-  {t:'BOD',x:'Biochemical oxygen demand: the oxygen microbes use up breaking down organic waste. Higher means more organic pollution.'},
-  {t:'Dissolved oxygen',x:'Oxygen dissolved in the water. Fish need it, and it drops when algae die and rot.'},
-  {t:'Nitrate',x:'A nutrient from fertilizer and waste. Extra nitrate feeds algae.'},
-  {t:'pH',x:'How acidic or basic the water is. Values far from the normal range stress aquatic life.'},
-  {t:'Ammonia',x:'Released as waste breaks down. It is toxic to fish at high levels.'},
-  {t:'Phosphate',x:'A nutrient from detergents, fertilizer and sewage. Often the limiting nutrient for algae.'},
-  {t:'Fecal coliform',x:'Bacteria from human and animal waste. A sign that sewage is reaching the water.'}
+  {t:'Dissolved Oxygen (mg/L)',x:'Oxygen dissolved in the water. Fish need it, and it can drop when algae die and rot.'},
+  {t:'Biochemical Oxygen Demand (mg/L)',x:'The oxygen microbes use while breaking down organic waste. Higher values can indicate more organic pollution.'},
+  {t:'Fecal Coliform (MPN/100 mL)',x:'Bacteria from human and animal waste. A high count can indicate that sewage is reaching the water.'},
+  {t:'pH (pH units)',x:'How acidic or basic the water is. Values outside the normal range can stress aquatic life.'},
+  {t:'Ammonia (mg/L)',x:'Released as waste breaks down. Elevated ammonia can be toxic to fish and other aquatic life.'},
+  {t:'Nitrate (mg/L)',x:'A nutrient from fertilizer and waste. Extra nitrate can feed algal growth.'},
+  {t:'Phosphate (mg/L)',x:'A nutrient from detergents, fertilizer and sewage. Excess phosphate can accelerate eutrophication.'},
+  {t:'Chemical Oxygen Demand (mg/L)',x:'The oxygen required to chemically break down oxidizable material in a water sample.'},
+  {t:'Turbidity (NTU)',x:'A measure of water cloudiness caused by suspended particles, sediment or organic matter.'},
+  {t:'Temperature (°C)',x:'Water temperature affects dissolved oxygen, metabolism and the pace of biological processes.'},
+  {t:'Chloride (mg/L)',x:'A dissolved salt indicator that can help reveal changes in water chemistry or saltwater influence.'},
+  {t:'Total Suspended Solids (mg/L)',x:'The mass of particles suspended in the water, including silt, clay and organic matter.'},
+  {t:'Total Dissolved Solids (mg/L)',x:'The combined concentration of dissolved salts, minerals and other small dissolved substances.'},
+  {t:'Alkalinity (mg/L)',x:'The water’s buffering capacity: how well it can resist changes in pH.'}
  ]
 };
 var LEVEL=[
@@ -250,7 +264,7 @@ function acc(items,g){
 function faces(){
  var F=[];
  // 0 cover
- F.push('<section class="page cover" data-n="0" style="padding:0"><svg viewBox="0 0 440 720" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><g transform="translate(0 100)"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3D48A"/><stop offset="1" stop-color="#F2A65A"/></linearGradient></defs><circle cx="330" cy="330" r="46" fill="url(#sg)" opacity=".95"/><path d="M0 395 L70 350 L120 385 L175 330 L240 395 L300 360 L440 400 L440 430 L0 430Z" fill="#1E5A56"/><rect y="400" width="440" height="220" fill="#17727F"/><g fill="none" stroke="#9BE0C3" stroke-width="2" stroke-linecap="round" opacity=".55"><path d="M30 440c30 10 60 10 90 0s60-10 90 0 60 10 90 0 60-10 90 0"/><path d="M0 475c30 10 60 10 90 0s60-10 90 0 60 10 90 0 60-10 90 0 60-10 80-4"/><path d="M40 515c30 10 60 10 90 0s60-10 90 0 60 10 90 0"/></g><path d="M300 420c20-14 50-14 70 0" stroke="#F3D48A" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/></g></svg><div class="inner"><div class="kicker" style="color:var(--mintbright)">The Laguna de Bay news magazine</div><h1 class="mast">LAKE<br><span>WATCH</span></h1><div style="margin-top:auto;display:flex;flex-direction:column;gap:14px"><ul class="cl"><li>Algal blooms spread across the lake</li><li>Fish kills hit Rizal cages</li><li>Water rises past the critical mark</li><li>Who really pollutes Laguna de Bay?</li></ul><div style="font-family:var(--mono);font-size:12px;color:#9CC4BF">ISSUE 01 · NOVEMBER 2026<br>Turn the page ›</div><div><button type="button" class="cbtn2" data-go="1">Open the issue ›</button></div></div></div></section>');
+ F.push('<section class="page cover image-cover" data-n="0" style="padding:0"><img class="cover-art" src="../assets/Front.png" alt="Lake Watch magazine front cover"><div class="cover-action"><button type="button" class="cbtn2" data-go="1">Open the issue ›</button></div></section>');
  // 1 contents
  var toc=[['The lake at a glance',2],['Algal blooms, April to June',3],['Fish kills in the cages',4],['Water rises past the critical mark',5],['How the lake is checked',6],['Salt in the water',7],['The 2013 report card',8],['Who pollutes the lake?',9],['Why it keeps happening',10],['What is being done',11],['Test yourself',12],['Sources',13],['Glossary',14]];
  F.push(page(1,'light','<p class="kicker">In this issue</p><h2>Contents</h2><div style="display:flex;flex-direction:column;gap:2px">'+toc.map(function(t,i){var sec=i===0?'':'';return '<button type="button" data-go="'+t[1]+'" style="display:flex;gap:12px;align-items:baseline;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #D4E3DF;padding:8px 2px;min-height:44px;font-size:15px;color:var(--panel)"><span style="font-family:var(--mono);color:var(--teal-ink);font-weight:700;width:28px;flex:none">'+String(t[1]+1).padStart(2,"0")+'</span><span style="flex:1;font-weight:500">'+t[0]+'</span><span style="color:var(--teal-ink)">›</span></button>';}).join('')+'</div><p class="src">News, water quality trend, pollution and causes, all in one issue. Tap a line to jump.</p>'));
@@ -263,7 +277,7 @@ function faces(){
  // 5 water level
  F.push(page(5,'dark','<p class="kicker">News · August to September 2026</p><h2>Water rises past the critical mark</h2><p>Drag the slider through three LLDA readings.</p><div class="gauge"><div class="tank" role="img" aria-label="Water level gauge"><div class="water" id="wat"></div><div class="mark" style="bottom:80%;border-color:#E5484D"><span style="color:#ff8b8f">12.50 high</span></div><div class="mark" style="bottom:0;border-color:#F2B134"><span style="color:#F2B134;top:-17px">10.50 low</span></div></div><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><div class="bigv"><span id="lvv">12.23</span> m</div><div id="lvd" style="font-family:var(--mono);font-size:13px;color:var(--mintbright)">Aug 14, 1 p.m.</div><div id="lvs" style="font-weight:700"></div></div></div><label for="lvl" style="font-family:var(--mono);font-size:12px;color:#9CC4BF">Reading: Aug 14 → Aug 29 → Sep 1</label><input type="range" id="lvl" min="0" max="2" step="1" value="0"><div class="card" id="lvx" aria-live="polite"></div><p class="src">The all-time record is 14.62 m, set in 1919. Sources: LLDA advisories via Philippine Daily Inquirer; LLDA water level page.</p>'));
  // 6 how checked
- F.push(page(6,'light','<p class="kicker">Water quality trend</p><h2>How the lake is checked</h2><p>LLDA samples the lake and its rivers monthly and checks them against national guidelines. Tap a parameter.</p><div class="row" id="parbtns">'+DET.par.map(function(d,i){return '<button type="button" class="chip'+(i===0?' on':'')+'" data-pick="par|'+i+'">'+d.t+'</button>';}).join('')+'</div><div class="card" id="det-par" aria-live="polite"><b>'+DET.par[0].t+'</b>'+DET.par[0].x+'</div><div class="card"><b>2025 result: still Class C</b>Monthly analysis put the lake\'s average BOD at 3 mg/L, which keeps it within the Class C standard for fisheries, recreation and agriculture.</div><div class="card"><b>The rivers tell another story</b>LLDA quarterly reports show tributaries repeatedly missing fecal coliform limits.</div><p class="src">Source: LLDA 2025 Accomplishment Report.</p>'));
+ F.push(page(6,'light','<p class="kicker">Water quality trend</p><h2>How the lake is checked</h2><p>LLDA samples the lake and its rivers monthly and checks them against national guidelines. These are the same parameters available in Analyze Laguna Lake. Tap a parameter.</p><div class="row" id="parbtns">'+DET.par.map(function(d,i){return '<button type="button" class="chip'+(i===0?' on':'')+'" data-pick="par|'+i+'">'+d.t+'</button>';}).join('')+'</div><div class="card" id="det-par" aria-live="polite"><b>'+DET.par[0].t+'</b>'+DET.par[0].x+'</div><div class="card"><b>Read the result carefully</b>The analysis view applies the selected date, parameter and Class C threshold. If a station has no matching record, it is shown as No data rather than estimated.</div><div class="card"><b>What the measurements tell us</b>BOD, nutrients, fecal coliform and oxygen help explain pollution pressure, while pH, temperature, salts and suspended material describe the lake’s condition.</div><p class="src">Source: LLDA 2025 Accomplishment Report and the local LLDA monitoring dataset used by this exhibit.</p>'));
  // 7 chloride
  F.push(page(7,'dark','<p class="kicker">Water quality trend · 2026</p><h2>Salt in the water</h2><p>The bloom advisory listed chloride readings from stations that crossed the 350 mg/L guideline. Tap a bar.</p>'+bars('cl',[{l:'Angono',v:851,vt:'851',c:'#E5484D'},{l:'Taytay',v:773,vt:'773',c:'#F2B134'},{l:'Diablo Pass',v:397,vt:'397',c:'#F2B134'}],900,'<div class="gline" style="left:calc(112px + (100% - 180px) * .3889)"><span>350 limit</span></div>')+'<div class="card"><b>What it means</b>Higher chloride at Angono and Taytay fits the backflow explanation. By June only one station was still over the limit.</div><p class="src">mg/L = milligrams per liter. Source: LLDA public advisory on algal bloom, 2026.</p>'));
  // 8 report card
@@ -296,7 +310,7 @@ function faces(){
   ['MPN/100 mL','Most probable number per 100 milliliters, a unit for counting bacteria such as coliforms.']
  ],'gl')));
  // 15 back
- F.push('<section class="page cover" data-n="15" style="padding:0"><div class="inner" style="gap:16px;justify-content:center"><div class="kicker" style="color:var(--mintbright)">Thanks for reading</div><h2 style="font-family:var(--display);font-weight:800;font-size:44px;line-height:1;margin:0;color:#fff;text-wrap:balance">Keep watching the lake.</h2><p style="color:#B9D0D0;font-size:15px">Explore station readings on the LakeWatch 3D map, then come back for the next issue. This magazine is an educational project and is not an official LLDA publication.</p><div style="display:flex;flex-wrap:wrap;gap:10px"><button type="button" class="cbtn2 ghost" data-go="0">Back to cover</button></div></div></section>');
+ F.push('<section class="page cover image-cover" data-n="15" style="padding:0"><img class="cover-art" src="../assets/back.png" alt="Lake Watch magazine back cover"><div class="cover-action"><button type="button" class="cbtn2 ghost" data-go="0">Back to cover</button></div></section>');
  return F;
 }
 

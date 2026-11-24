@@ -36,7 +36,7 @@ function simplifyGeoRing(ring, maxPoints = 520) {
 }
 function applyLagunaMapTexture(displayMaterial) {
   const canvas = document.createElement('canvas'); canvas.width = 1200; canvas.height = 720;
-  const context = canvas.getContext('2d'); const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; displayMaterial.map = texture; displayMaterial.needsUpdate = true;
+  const context = canvas.getContext('2d'); const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; displayMaterial.color.set(0xffffff); displayMaterial.map = texture; displayMaterial.needsUpdate = true;
   const draw = (geojson) => {
     const coordinates = [];
     (geojson.features || []).forEach((feature) => {
@@ -47,17 +47,17 @@ function applyLagunaMapTexture(displayMaterial) {
     const bounds = coordinates.reduce((box, [longitude, latitude]) => ({ minX: Math.min(box.minX, longitude), maxX: Math.max(box.maxX, longitude), minY: Math.min(box.minY, latitude), maxY: Math.max(box.maxY, latitude) }), { minX: 121.05, maxX: 121.48, minY: 14.18, maxY: 14.54 });
     const pad = 105; const sx = (canvas.width - pad * 2) / (bounds.maxX - bounds.minX); const sy = (canvas.height - pad * 2) / (bounds.maxY - bounds.minY); const scale = Math.min(sx, sy);
     const project = ([longitude, latitude]) => [pad + (longitude - bounds.minX) * scale, canvas.height - pad - (latitude - bounds.minY) * scale];
-    context.fillStyle = '#e8dfc4'; context.fillRect(0, 0, canvas.width, canvas.height);
-    context.strokeStyle = 'rgba(90, 116, 102, .24)'; context.lineWidth = 2; for (let x = pad; x < canvas.width - pad; x += 78) { context.beginPath(); context.moveTo(x, pad); context.lineTo(x, canvas.height - pad); context.stroke(); } for (let y = pad; y < canvas.height - pad; y += 78) { context.beginPath(); context.moveTo(pad, y); context.lineTo(canvas.width - pad, y); context.stroke(); }
+    context.fillStyle = '#ffffff'; context.fillRect(0, 0, canvas.width, canvas.height);
+    context.strokeStyle = 'rgba(35, 133, 201, .18)'; context.lineWidth = 2; for (let x = pad; x < canvas.width - pad; x += 78) { context.beginPath(); context.moveTo(x, pad); context.lineTo(x, canvas.height - pad); context.stroke(); } for (let y = pad; y < canvas.height - pad; y += 78) { context.beginPath(); context.moveTo(pad, y); context.lineTo(canvas.width - pad, y); context.stroke(); }
     const drawPath = (ring, fill, stroke, width) => { context.beginPath(); simplifyGeoRing(ring, 900).forEach((coordinate, index) => { const [x, y] = project(coordinate); index ? context.lineTo(x, y) : context.moveTo(x, y); }); context.closePath(); if (fill) { context.fillStyle = fill; context.fill(); } context.strokeStyle = stroke; context.lineWidth = width; context.stroke(); };
-    const features = geojson.features || []; features.forEach((feature) => { const geometry = feature.geometry; if (!geometry) return; const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.type === 'MultiPolygon' ? geometry.coordinates : []; polygons.forEach((polygon) => { drawPath(polygon[0], '#5c9ba0', '#294f55', 6); polygon.slice(1).forEach((hole) => drawPath(hole, '#e8dfc4', '#294f55', 3)); }); });
-    context.strokeStyle = 'rgba(176, 101, 70, .72)'; context.lineWidth = 4; [[121.1,14.28,121.3,14.4],[121.18,14.2,121.36,14.5],[121.06,14.34,121.43,14.34]].forEach(([a,b,c,d]) => { const start = project([a,b]); const end = project([c,d]); context.beginPath(); context.moveTo(...start); context.lineTo(...end); context.stroke(); });
-    context.fillStyle = '#263d3b'; context.font = '700 36px sans-serif'; context.fillText('LAKE WATCH', 46, 58); context.font = '18px sans-serif'; context.fillStyle = '#52645c'; context.fillText('MAGAZINE · ISSUE 01 · LAKE NEWS', 48, 84); context.fillStyle = 'rgba(15,32,33,.84)'; context.fillRect(42, 108, 420, 82); context.fillStyle = '#9BE0C3'; context.font = '700 24px sans-serif'; context.fillText('READ THE LAKE', 62, 142); context.fillStyle = '#F3D48A'; context.font = '16px sans-serif'; context.fillText('Turn the page · press E to open', 62, 169);
+    const features = geojson.features || []; features.forEach((feature) => { const geometry = feature.geometry; if (!geometry) return; const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.type === 'MultiPolygon' ? geometry.coordinates : []; polygons.forEach((polygon) => { drawPath(polygon[0], '#8ed6f5', '#14538c', 6); polygon.slice(1).forEach((hole) => drawPath(hole, '#ffffff', '#14538c', 3)); }); });
+    context.strokeStyle = 'rgba(35, 133, 201, .58)'; context.lineWidth = 4; [[121.1,14.28,121.3,14.4],[121.18,14.2,121.36,14.5],[121.06,14.34,121.43,14.34]].forEach(([a,b,c,d]) => { const start = project([a,b]); const end = project([c,d]); context.beginPath(); context.moveTo(...start); context.lineTo(...end); context.stroke(); });
+    context.fillStyle = '#06152f'; context.font = '700 36px sans-serif'; context.fillText('LAKE WATCH', 46, 58); context.font = '18px sans-serif'; context.fillStyle = '#496e90'; context.fillText('MAGAZINE · ISSUE 01 · LAKE NEWS', 48, 84); context.fillStyle = 'rgba(6,21,47,.9)'; context.fillRect(42, 108, 420, 82); context.fillStyle = '#b5e7ff'; context.font = '700 24px sans-serif'; context.fillText('READ THE LAKE', 62, 142); context.fillStyle = '#8ed6f5'; context.font = '16px sans-serif'; context.fillText('Turn the page · press E to open', 62, 169);
     context.fillStyle = '#263d3b'; context.font = '700 24px sans-serif'; context.fillText('N', canvas.width - 75, 62); context.strokeStyle = '#263d3b'; context.lineWidth = 4; context.beginPath(); context.moveTo(canvas.width - 64, 72); context.lineTo(canvas.width - 64, 126); context.stroke(); context.beginPath(); context.moveTo(canvas.width - 64, 72); context.lineTo(canvas.width - 75, 90); context.moveTo(canvas.width - 64, 72); context.lineTo(canvas.width - 53, 90); context.stroke();
-    context.fillStyle = 'rgba(232,223,196,.94)'; context.fillRect(42, canvas.height - 90, 360, 48); context.fillStyle = '#294f55'; context.font = '16px sans-serif'; context.fillText('Laguna de Bay · wall edition', 60, canvas.height - 58); context.fillStyle = '#5c9ba0'; context.fillRect(60, canvas.height - 51, 18, 4); context.fillStyle = '#b06546'; context.fillRect(84, canvas.height - 51, 18, 4); context.fillStyle = '#52645c'; context.fillText('lake   shoreline', 114, canvas.height - 43);
+    context.fillStyle = 'rgba(245,250,255,.96)'; context.fillRect(42, canvas.height - 90, 360, 48); context.fillStyle = '#14538c'; context.font = '16px sans-serif'; context.fillText('Laguna de Bay · wall edition', 60, canvas.height - 58); context.fillStyle = '#2385c9'; context.fillRect(60, canvas.height - 51, 18, 4); context.fillStyle = '#55b9ec'; context.fillRect(84, canvas.height - 51, 18, 4); context.fillStyle = '#496e90'; context.fillText('lake   shoreline', 114, canvas.height - 43);
     texture.needsUpdate = true;
   };
-  context.fillStyle = '#e8dfc4'; context.fillRect(0, 0, canvas.width, canvas.height); context.fillStyle = '#52645c'; context.font = '700 34px sans-serif'; context.fillText('LAGUNA DE BAY', 46, 58); texture.needsUpdate = true;
+  context.fillStyle = '#ffffff'; context.fillRect(0, 0, canvas.width, canvas.height); context.fillStyle = '#496e90'; context.font = '700 34px sans-serif'; context.fillText('LAGUNA DE BAY', 46, 58); texture.needsUpdate = true;
   fetch('../assets/laguna-de-bay.geojson').then((response) => response.json()).then(draw).catch(() => {});
 }
 function applyAccurateTableMap(group) {
@@ -85,14 +85,14 @@ function addMiniatureTrees(group, shoreline, landBoundary) {
 }
 function wallMap(group, wallMat, inkMat, accentMat) {
   const board = cube(group, null, 'WallReliefMap', new THREE.Vector3(-5.86, 2.15, -.9), [.045, 1.75, 3.15], wallMat, false, false); board.rotation.y = Math.PI / 2;
-  const frame = material('map-frame', 0x42372d, .52);
+  const frame = material('map-frame', 0x06152f, .34, .55);
   [[-5.9, 3.04, -.9, .08, .08, 3.28], [-5.9, 1.26, -.9, .08, .08, 3.28], [-5.9, 2.15, .69, .08, 1.86, .08], [-5.9, 2.15, -2.49, .08, 1.86, .08]].forEach(([x, y, z, sx, sy, sz]) => cube(group, null, 'MapFrame', new THREE.Vector3(x, y, z), [sx, sy, sz], frame, false, false));
   const land = [[-.98, -.52], [-.42, -.78], [.22, -.5], [.48, -.08], [.22, .38], [-.4, .6], [-.9, .34]];
   const lake = [[-.52, -.1], [-.22, -.38], [.2, -.18], [.27, .12], [-.08, .34], [-.4, .25], [-.65, .02]];
   const mapScale = 1.3; const mapY = 2.16;
   wallExtrudedShape(group, 'WallMapLandmass', land.map(([z, x]) => [z * mapScale, x * mapScale]), new THREE.Vector3(-5.88, mapY, -.9), .018, accentMat, .01);
-  wallExtrudedShape(group, 'WallMapWater', lake.map(([z, x]) => [z * mapScale, x * mapScale]), new THREE.Vector3(-5.855, mapY + .02, -.9), .012, material('wall-map-water', 0x397b87, .35), .008);
-  const contour = new THREE.LineBasicMaterial({ color: 0xa77e4c, transparent: true, opacity: .8 });
+  wallExtrudedShape(group, 'WallMapWater', lake.map(([z, x]) => [z * mapScale, x * mapScale]), new THREE.Vector3(-5.855, mapY + .02, -.9), .012, material('wall-map-water', 0x2385c9, .35), .008);
+  const contour = new THREE.LineBasicMaterial({ color: 0x55b9ec, transparent: true, opacity: .8 });
   [[-.72, -.4], [-.48, -.18], [-.2, .1], [.12, .28]].forEach(([z, x], i) => { const points = [[z - .18, x - .08], [z + .08, x - .14], [z + .2, x + .05], [z + .02, x + .14]].map(([pointZ, pointY]) => [pointZ * mapScale, pointY * mapScale]); wallLine(group, `WallMapContour${i}`, points, new THREE.Vector3(-5.83, mapY, -.9), contour); });
 }
 function createCinematicMonitorFeed(office, screenMaterials) {
@@ -142,17 +142,15 @@ export function buildOffice(scene, collisions) {
   const compass = cylinder(diorama, 'CompassRose', new THREE.Vector3(-1.65, 1.53, .9), .19, .025, material('compass', 0xf0e0b5, .6)); const needle = cube(diorama, null, 'CompassNeedle', new THREE.Vector3(-1.65, 1.56, .9), [.025, .02, .28], material('needle', 0xb3473d, .45), false, false); needle.rotation.y = -.72;
   const hotspot = new THREE.Mesh(new THREE.BoxGeometry(3.9, .7, 1.9), new THREE.MeshBasicMaterial({ transparent: true, opacity: .001, depthWrite: false })); hotspot.name = 'LakeAnalysisHotspot'; hotspot.position.set(0, 1.34, .15); diorama.add(hotspot);
   applyAccurateTableMap(diorama);
-  wallMap(office, material('map-board', 0xe8d9b6, .96), material('map-ink', 0x273f3d, .75), material('map-land', 0x75936d, .9));
+  wallMap(office, material('map-board', 0xf5faff, .96), material('map-ink', 0x0b2b58, .75), material('map-land', 0x55b9ec, .9));
   cube(office, collisions, 'WorkstationDesk', new THREE.Vector3(-3.85, .82, 2.95), [3.25, .14, 1.05], wood);
   cube(office, collisions, 'WorkstationPedestal', new THREE.Vector3(-3.85, .4, 3.12), [1.1, .72, .72], dark);
   const screenMaterials = []; [-4.45, -3.25].forEach((x, i) => { cube(office, collisions, `Monitor${i + 1}`, new THREE.Vector3(x, 1.54, 2.94), [.9, .58, .06], dark, true); const screenMaterial = material(`screen${i}`, i ? 0x2e7777 : 0x356b72, .28, .12); screenMaterials.push(screenMaterial); cube(office, collisions, `MonitorScreen${i + 1}`, new THREE.Vector3(x, 1.54, 2.9), [.72, .4, .018], screenMaterial, false, false); cube(office, collisions, 'MonitorStand', new THREE.Vector3(x, 1.14, 2.94), [.08, .28, .08], dark, false); });
   createCinematicMonitorFeed(office, screenMaterials);
-  cube(office, collisions, 'DisplayFrame', new THREE.Vector3(3.7, 2.22, -4.28), [3.25, 1.42, .12], dark, true);
-  const displayMaterial = material('display', 0x23474a, .3, .12); cube(office, collisions, 'MonitoringDisplay', new THREE.Vector3(3.7, 2.22, -4.2), [2.92, 1.1, .025], displayMaterial, false, false); applyLagunaMapTexture(displayMaterial);
-  for (let i = 0; i < 5; i++) cube(office, collisions, 'DisplayGraph', new THREE.Vector3(2.7 + i * .4, 2.13 + (i % 2) * .16, -4.17), [.22, .08 + (i % 3) * .1, .02], material('graph', 0x78c9ad, .35), false, false);
+  const displayFrame = material('display-frame', 0x06152f, .3, .72); cube(office, collisions, 'DisplayFrame', new THREE.Vector3(3.7, 2.22, -4.28), [3.25, 1.42, .12], displayFrame, true);
+  const displayMaterial = material('display', 0xffffff, .3, .12); cube(office, collisions, 'MonitoringDisplay', new THREE.Vector3(3.7, 2.22, -4.2), [2.92, 1.1, .025], displayMaterial, false, false); applyLagunaMapTexture(displayMaterial);
   for (let i = 0; i < 3; i++) cube(office, collisions, 'StorageCabinet', new THREE.Vector3(-4.55, .9 + i * .72, -.8), [1.25, .62, 1.25], i === 1 ? wood : dark);
   cube(office, collisions, 'Door', new THREE.Vector3(5.9, 1.35, -2.45), [.08, 2.7, 1.35], wood);
-  cube(office, collisions, 'OfficeSign', new THREE.Vector3(5.82, 2.7, -2.45), [.025, .3, .95], material('sign', 0x75c6a8, .5), false, false);
   cylinder(office, 'PlantPot', new THREE.Vector3(4.7, .28, 3.35), .32, .56, dark);
   for (let i = 0; i < 6; i++) { const leaf = new THREE.Mesh(new THREE.SphereGeometry(.24, 12, 8), green); leaf.scale.set(.5, 1.7, .5); leaf.position.set(4.7 + Math.cos(i) * .28, .78 + (i % 2) * .12, 3.35 + Math.sin(i) * .28); leaf.castShadow = true; office.add(leaf); }
   [-3.2, 0, 3.2].forEach(x => cube(office, collisions, 'CeilingLight', new THREE.Vector3(x, 3.12, 1.8), [1.8, .04, .32], material('light', 0xf7f1d8, .22), false, false));

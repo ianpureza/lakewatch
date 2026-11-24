@@ -1,16 +1,16 @@
 :root {
   color-scheme: dark;
-  --ink: #eaf4f0;
-  --muted: #9fb7b0;
-  --subtle: #78938c;
-  --page: #071617;
-  --page-deep: #041012;
-  --panel: rgba(14, 36, 36, .72);
-  --line: rgba(145, 202, 185, .18);
-  --mint: #75c6a8;
-  --mint-bright: #a0e7c9;
-  --gold: #f3d48a;
-  --shadow: rgba(0, 0, 0, .3);
+  --ink: #edf7ff;
+  --muted: #b3cce3;
+  --subtle: #7f9fbd;
+  --page: #071a3a;
+  --page-deep: #020817;
+  --panel: rgba(10, 37, 79, .78);
+  --line: rgba(137, 205, 244, .22);
+  --mint: #55b9ec;
+  --mint-bright: #b5e7ff;
+  --gold: #dbefff;
+  --shadow: rgba(0, 7, 24, .45);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -109,3 +109,20 @@ body.is-leaving { animation: none; opacity: 0; transform: translateY(8px); }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
   body.is-leaving { opacity: 1; transform: none; }
 }
+
+/* Blue research-console palette. */
+body.landing-page { background: radial-gradient(circle at 76% 18%, rgba(35,133,211,.24), transparent 27rem), radial-gradient(circle at 8% 76%, rgba(91,164,224,.12), transparent 25rem), linear-gradient(145deg, var(--page), var(--page-deep)); }
+.site-nav { border-bottom-color: rgba(137,205,244,.14); }
+.hero-lede, .text-link { color: #c7def2; }
+.primary-button { color: #04172f; box-shadow: 0 14px 34px rgba(52,164,225,.22); }
+.primary-button:hover { box-shadow: 0 18px 42px rgba(52,164,225,.34); }
+.visual-frame { border-color: rgba(181,231,255,.42); background: linear-gradient(145deg, rgba(13,54,103,.96), rgba(3,20,49,.98)); box-shadow: 0 28px 70px var(--shadow), inset 0 0 80px rgba(70,178,235,.1); }
+.visual-grid { background-image: linear-gradient(rgba(85,185,236,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(85,185,236,.1) 1px, transparent 1px); }
+.lake-orbit, .lake-orbit::before, .lake-orbit::after { border-color: rgba(181,231,255,.4); }
+.lake-shape { background: linear-gradient(135deg, #64c8f1, #267bb8 68%, #123f80); box-shadow: inset 1rem 1rem 2rem rgba(214,244,255,.18); }
+.orbit-marker { border-color: rgba(181,231,255,.45); background: rgba(3,20,49,.88); color: #c7ecff; }
+.preview-card, .feature-card { border-color: rgba(137,205,244,.24); background: rgba(8,31,69,.88); }
+.feature-card-accent { background: linear-gradient(145deg, rgba(20,75,132,.84), rgba(7,29,65,.92)); }
+.feature-card:hover { background: rgba(16,59,112,.94); }
+.key-row, .feature-tag { color: #afd4ed; }
+.site-footer { border-top-color: rgba(137,205,244,.14); }

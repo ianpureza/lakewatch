@@ -1,0 +1,16 @@
+parameter,unit
+bod,mg/L
+cod,mg/L
+dissolved_oxygen,mg/L
+ph,pH units
+temperature,deg C
+turbidity,NTU
+nitrate,mg/L
+phosphate,mg/L
+tds,mg/L
+alkalinity,mg CaCO3/L
+ammonia,mg/L
+fecal_coliform,MPN/100 mL
+chloride,mg/L
+tss,mg/L
+transparency,unknown

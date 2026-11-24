@@ -1,0 +1,8 @@
+parameter,unit,min_inclusive,max_inclusive
+dissolved_oxygen,mg/L,5.0,
+bod,mg/L,,7.0
+ph,pH units,6.5,9.0
+nitrate,mg/L,,7.0
+phosphate,mg/L,,0.025
+fecal_coliform,MPN/100 mL,,200.0
+ammonia,mg/L,,0.06
