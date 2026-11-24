@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { OfficeScene } from './OfficeScene.js?v=overview25';
-import { PlayerController } from './PlayerController.js?v=overview25';
-import { InteractionManager } from './InteractionManager.js?v=overview25';
+import { OfficeScene } from './OfficeScene.js?v=overview26';
+import { PlayerController } from './PlayerController.js?v=overview26';
+import { InteractionManager } from './InteractionManager.js?v=overview26';
 import { LakeAnalysis } from './LakeAnalysis.js';
 import { AnalysisController } from './AnalysisController.js';
-import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview25';
+import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview26';
 
 class Game {
   constructor() {
@@ -27,7 +27,7 @@ class Game {
     this.onMagazineMessage = (event) => { if (event.source !== this.magazineFrame?.contentWindow || event.data?.source !== 'lakewatch-magazine') return; if (event.data.type === 'state') { this.magazinePrev.disabled = Boolean(event.data.atStart); this.magazineNext.disabled = Boolean(event.data.atEnd); } };
     window.addEventListener('message', this.onMagazineMessage);
     document.querySelector('#analysis-reset').addEventListener('click', () => this.analysis.reset());
-    document.querySelector('#analysis-collapse').addEventListener('click', (event) => { const collapsed = this.analysisUi.classList.toggle('analysis-collapsed'); event.currentTarget.textContent = collapsed ? 'Show Analysis' : 'Collapse Analysis'; event.currentTarget.setAttribute('aria-expanded', String(!collapsed)); });
+    document.querySelector('#analysis-collapse').addEventListener('click', (event) => { const collapsed = this.analysisUi.classList.toggle('analysis-collapsed'); event.currentTarget.textContent = collapsed ? '☰' : '×'; event.currentTarget.setAttribute('aria-label', collapsed ? 'Show analysis panels' : 'Hide analysis panels'); event.currentTarget.title = collapsed ? 'Show analysis panels' : 'Hide analysis panels'; event.currentTarget.setAttribute('aria-expanded', String(!collapsed)); });
     document.querySelector('#analysis-back').addEventListener('click', () => this.exitAnalysis(true));
     document.addEventListener('keydown', (event) => { if (event.code === 'Escape' && this.analysis.state !== 'EXPLORING') this.exitAnalysis(false); else if (event.code === 'Escape' && !this.panelBackdrop.hidden) this.closePanel(false); });
     this.lakeAnalysis.load().then((result) => { this.analysisStatus.textContent = result.ok ? `Geographic boundary loaded · ${result.source}` : 'Boundary unavailable · development placeholder retained'; if (result.ok) return this.workspace.load(); });
@@ -45,7 +45,7 @@ class Game {
   }
   openLakePanel() {
     if (!this.analysis.enter()) return;
-    this.player.enabled = false; this.player.keys.clear(); this.player.setTouchControlsVisible(false); this.interactions.setEnabled(false); document.exitPointerLock?.(); this.analysisUi.classList.remove('analysis-collapsed'); this.analysisUi.querySelector('#analysis-collapse').textContent = 'Collapse Analysis'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-expanded', 'true'); this.analysisUi.hidden = false;
+    this.player.enabled = false; this.player.keys.clear(); this.player.setTouchControlsVisible(false); this.interactions.setEnabled(false); document.exitPointerLock?.(); this.analysisUi.classList.remove('analysis-collapsed'); this.analysisUi.querySelector('#analysis-collapse').textContent = '×'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-label', 'Hide analysis panels'); this.analysisUi.querySelector('#analysis-collapse').title = 'Hide analysis panels'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-expanded', 'true'); this.analysisUi.hidden = false;
   }
   exitAnalysis(reacquirePointerLock) {
     if (this.analysis.state === 'EXPLORING') return;
@@ -67,7 +67,7 @@ class Game {
     overview.querySelector('.system-credit')?.before(activitySection, guidelines);
   }
   openMagazinePanel() {
-    const content = '<div class="magazine-frame"><iframe class="magazine-embed" title="Lake Watch Magazine" src="./Lake%20Watch%20Magazine.html?embedded=1&v=overview2" loading="eager"></iframe></div>';
+    const content = '<div class="magazine-frame"><iframe class="magazine-embed" title="Lake Watch Magazine" src="./Lake%20Watch%20Magazine.html?embedded=1&v=overview3" loading="eager"></iframe></div>';
     this.openPanel('Lake Watch Magazine', content);
     this.magazineFrame = this.panelContent.querySelector('.magazine-embed');
     this.magazineFrame.addEventListener('load', () => this.sendMagazineCommand('state'), { once: true });

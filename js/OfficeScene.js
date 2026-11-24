@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildOffice } from './OfficeBuilder.js?v=overview25';
+import { buildOffice } from './OfficeBuilder.js?v=overview26';
 import { CollisionSystem } from './CollisionSystem.js';
 
 export class OfficeScene {
