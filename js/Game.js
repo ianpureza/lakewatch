@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { OfficeScene } from './OfficeScene.js?v=overview16';
-import { PlayerController } from './PlayerController.js';
-import { InteractionManager } from './InteractionManager.js';
+import { OfficeScene } from './OfficeScene.js?v=overview25';
+import { PlayerController } from './PlayerController.js?v=overview25';
+import { InteractionManager } from './InteractionManager.js?v=overview25';
 import { LakeAnalysis } from './LakeAnalysis.js';
 import { AnalysisController } from './AnalysisController.js';
-import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview18';
+import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview25';
 
 class Game {
   constructor() {
@@ -15,7 +15,7 @@ class Game {
     this.lakeAnalysis = new LakeAnalysis(this.office.scene); this.analysis = new AnalysisController(this.office.camera, this.renderer.domElement, this.lakeAnalysis);
     this.analysisUi = document.querySelector('#analysis-ui'); this.analysisStatus = document.querySelector('#analysis-status'); this.workspace = new AnalysisWorkspace({ camera: this.office.camera, domElement: this.renderer.domElement, lakeAnalysis: this.lakeAnalysis, ui: this.analysisUi });
     this.panelBackdrop = document.querySelector('#panel-backdrop'); this.panel = document.querySelector('#interaction-panel'); this.panelTitle = document.querySelector('#panel-title'); this.panelContent = document.querySelector('#panel-content'); this.magazinePrev = document.querySelector('#magazine-prev'); this.magazineNext = document.querySelector('#magazine-next'); this.magazineSpacer = document.querySelector('#magazine-action-spacer'); this.magazineFrame = null;
-    this.interactions = new InteractionManager(this.office.camera, this.office.scene, document.querySelector('#interaction-prompt'));
+    this.interactions = new InteractionManager(this.office.camera, this.office.scene, document.querySelector('#interaction-prompt')); this.mobileInteract = document.querySelector('#mobile-interact'); this.mobileInteract?.addEventListener('click', () => this.interactions.interact());
     this.registerInteractions();
     this.onLakeShortcut = (event) => { if (event.code !== 'KeyE' || event.repeat || !this.player.enabled || this.analysis.state !== 'EXPLORING') return; const tableCenter = new THREE.Vector3(0, this.player.position.y, .15); if (this.player.position.distanceTo(tableCenter) <= 4.5) this.openLakePanel(); };
     document.addEventListener('keydown', this.onLakeShortcut);
@@ -28,6 +28,7 @@ class Game {
     window.addEventListener('message', this.onMagazineMessage);
     document.querySelector('#analysis-reset').addEventListener('click', () => this.analysis.reset());
     document.querySelector('#analysis-collapse').addEventListener('click', (event) => { const collapsed = this.analysisUi.classList.toggle('analysis-collapsed'); event.currentTarget.textContent = collapsed ? 'Show Analysis' : 'Collapse Analysis'; event.currentTarget.setAttribute('aria-expanded', String(!collapsed)); });
+    document.querySelector('#analysis-back').addEventListener('click', () => this.exitAnalysis(true));
     document.addEventListener('keydown', (event) => { if (event.code === 'Escape' && this.analysis.state !== 'EXPLORING') this.exitAnalysis(false); else if (event.code === 'Escape' && !this.panelBackdrop.hidden) this.closePanel(false); });
     this.lakeAnalysis.load().then((result) => { this.analysisStatus.textContent = result.ok ? `Geographic boundary loaded · ${result.source}` : 'Boundary unavailable · development placeholder retained'; if (result.ok) return this.workspace.load(); });
     document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement) this.intro.classList.add('hidden'); else if (this.player.enabled) this.intro.classList.remove('hidden'); });
@@ -44,11 +45,11 @@ class Game {
   }
   openLakePanel() {
     if (!this.analysis.enter()) return;
-    this.player.enabled = false; this.player.keys.clear(); this.interactions.setEnabled(false); document.exitPointerLock?.(); this.analysisUi.classList.remove('analysis-collapsed'); this.analysisUi.querySelector('#analysis-collapse').textContent = 'Collapse Analysis'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-expanded', 'true'); this.analysisUi.hidden = false;
+    this.player.enabled = false; this.player.keys.clear(); this.player.setTouchControlsVisible(false); this.interactions.setEnabled(false); document.exitPointerLock?.(); this.analysisUi.classList.remove('analysis-collapsed'); this.analysisUi.querySelector('#analysis-collapse').textContent = 'Collapse Analysis'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-expanded', 'true'); this.analysisUi.hidden = false;
   }
   exitAnalysis(reacquirePointerLock) {
     if (this.analysis.state === 'EXPLORING') return;
-    this.analysis.exit(); this.analysisUi.hidden = true; this.player.enabled = true; this.interactions.setEnabled(true);
+    this.analysis.exit(); this.analysisUi.hidden = true; this.player.enabled = true; this.player.setTouchControlsVisible(true); this.interactions.setEnabled(true);
     if (reacquirePointerLock) this.player.enable(); else document.querySelector('#intro').classList.remove('hidden');
   }
   openSystemOverview() {
@@ -58,10 +59,15 @@ class Game {
     const guidelines = document.createElement('section');
     guidelines.className = 'system-guidelines';
     guidelines.innerHTML = '<div><p class="system-kicker">IMPORTANT GUIDELINES</p><h3>Use the system with context.</h3></div><div class="system-guideline-grid"><article><strong>01 · Provenance</strong><span>Readings come from a partial CSV. Verify each retained source URL before using values beyond this educational simulator.</span></article><article><strong>02 · Location accuracy</strong><span>The source readings have blank coordinates. Nine matching station IDs use the Q4 2020 estimate file; six use fallback anchors. All remain approximate.</span></article><article><strong>03 · Interpretation</strong><span>Good, fair, and poor colors are interface screening cues—not regulatory or health determinations.</span></article><article><strong>04 · Model limits</strong><span>Terrain, bathymetry, trees, and water-level animation are illustrative and should not be treated as forecasts.</span></article><article><strong>05 · Updating data</strong><span>Update the local CSV and coordinate file, reload the PHP adapter, and refresh the simulator. The current workstation does not upload files.</span></article><article><strong>06 · Best experience</strong><span>Use a desktop browser with WebGL, keyboard, and mouse. Press Esc to release Pointer Lock safely.</span></article></div>';
-    overview.querySelector('.system-credit')?.before(guidelines);
+    const updateGuideline = guidelines.querySelectorAll('.system-guideline-grid article')[4]?.querySelector('span');
+    if (updateGuideline) updateGuideline.textContent = 'Update the local CSV and refresh the simulator to restore the default dataset.';
+    const activitySection = document.createElement('section');
+    activitySection.className = 'system-activity';
+    activitySection.innerHTML = `<div class="system-section-heading"><div><p class="system-kicker">ACTIVITY / HOW WATER IS WATCHED</p><h3>What happens behind a water-quality reading?</h3></div><span class="system-index">06</span></div><p class="system-activity-intro">This is a deeper, educational summary of public LLDA program descriptions. The simulator is not connected to LLDA live systems; its default view uses a local, partial CSV.</p><div class="system-activity-grid"><article class="system-activity-card"><strong>01 &middot; FIELD + LAB</strong><h4>Routine water-quality monitoring</h4><p>LLDA&apos;s Environmental Laboratory and Research Division describes routine monitoring of Laguna de Bay and its tributaries. Recent annual-report scope describes 15 regular lake stations and 36 tributary stations, with additional sites for other programs.</p><a href="https://llda.gov.ph/environmental-management-program/" target="_blank" rel="noreferrer">LLDA environmental management &rarr;</a></article><article class="system-activity-card"><strong>02 &middot; SAMPLE ANALYSIS</strong><h4>From sample to result</h4><p>Water and wastewater samples move through labeling, a chain-of-custody form, laboratory analysis, review, and release. Public laboratory services cover physico-chemical, biological, microbiological, and heavy-metal analyses.</p><a href="https://llda.gov.ph/laboratory-services/" target="_blank" rel="noreferrer">LLDA laboratory services &rarr;</a></article><article class="system-activity-card"><strong>03 &middot; DECISION SUPPORT</strong><h4>DSS, HYMOS, and Water Mondriaan</h4><p>LLDA describes a Decision Support System and a Water Quality Monitoring program for policy decisions. Its Water Mondriaan presents monthly status against DENR criteria and uses stored monitoring data to compare oxygen demand, bacteria, nutrients, algae, and other indicators.</p><a href="https://llda.gov.ph/the-water-mondriaan/" target="_blank" rel="noreferrer">Read the Water Mondriaan overview &rarr;</a></article><article class="system-activity-card"><strong>04 &middot; LEVEL + WEATHER</strong><h4>Lake-level gauging stations</h4><p>A separate hydrometeorological layer uses lake-level gauging stations, radar level sensors, and GSM transmission to a data center. The public project description also includes rainfall and wind measurements for real-time and historical visualization.</p><a href="https://llda.gov.ph/wp-content/uploads/dox/bid/2025/07_July/DATAVIS-2025-02_FOR%20PRINTING_compressed.pdf" target="_blank" rel="noreferrer">LLDA data-visualization project brief &rarr;</a></article><article class="system-activity-card"><strong>05 &middot; COMPLIANCE + HOTSPOTS</strong><h4>Monitoring informs action</h4><p>Monitoring is used to evaluate development impacts, support environmental planning, inform permits and enforcement, and investigate hotspot areas. LLDA reports also describe special-lake, productivity, and industrial or commercial waste sampling.</p><a href="https://llda.gov.ph/ldb-and-its-tributaries/" target="_blank" rel="noreferrer">LLDA water-quality reports &rarr;</a></article></div>`;
+    overview.querySelector('.system-credit')?.before(activitySection, guidelines);
   }
   openMagazinePanel() {
-    const content = '<div class="magazine-frame"><iframe class="magazine-embed" title="Lake Watch Magazine" src="./Lake%20Watch%20Magazine.html?embedded=1&v=overview1" loading="eager"></iframe></div>';
+    const content = '<div class="magazine-frame"><iframe class="magazine-embed" title="Lake Watch Magazine" src="./Lake%20Watch%20Magazine.html?embedded=1&v=overview2" loading="eager"></iframe></div>';
     this.openPanel('Lake Watch Magazine', content);
     this.magazineFrame = this.panelContent.querySelector('.magazine-embed');
     this.magazineFrame.addEventListener('load', () => this.sendMagazineCommand('state'), { once: true });
@@ -164,23 +170,26 @@ class Game {
   }
   openPanel(title, content) {
     if (!this.panelBackdrop.hidden) return;
-    this.player.enabled = false; this.player.keys.clear(); this.interactions.setEnabled(false); document.exitPointerLock?.();
+    this.player.enabled = false; this.player.keys.clear(); this.player.setTouchControlsVisible(false); this.interactions.setEnabled(false); document.exitPointerLock?.();
     const isMagazine = title === 'Lake Watch Magazine';
+    const isSystem = title === 'LakeWatch System Overview';
+    this.panelBackdrop.classList.toggle('magazine-backdrop', isMagazine);
+    this.panelBackdrop.classList.toggle('system-backdrop', isSystem);
     this.panel.classList.toggle('magazine-panel', isMagazine);
-    this.panel.classList.toggle('system-panel', title === 'LakeWatch System Overview');
+    this.panel.classList.toggle('system-panel', isSystem);
     this.magazinePrev.hidden = !isMagazine; this.magazineNext.hidden = !isMagazine; this.magazineSpacer.hidden = !isMagazine;
     this.magazinePrev.disabled = true; this.magazineNext.disabled = false;
     this.panelTitle.textContent = title; this.panelContent.innerHTML = content; this.panelBackdrop.hidden = false; this.panel.focus();
   }
   closePanel(reacquirePointerLock) {
     if (this.panelBackdrop.hidden) return;
-    this.panelBackdrop.hidden = true; this.interactions.setEnabled(true); this.player.enabled = true;
+    this.panelBackdrop.hidden = true; this.panelBackdrop.classList.remove('magazine-backdrop', 'system-backdrop'); this.interactions.setEnabled(true); this.player.enabled = true; this.player.setTouchControlsVisible(true);
     this.panel.classList.remove('magazine-panel', 'system-panel');
     this.magazineFrame = null; this.magazinePrev.hidden = true; this.magazineNext.hidden = true; this.magazineSpacer.hidden = true;
     if (reacquirePointerLock) this.player.enable();
     else document.querySelector('#intro').classList.remove('hidden');
   }
-  startExploring() { this.player.enable(); }
+  startExploring() { this.player.enable(); if (this.player.isTouchDevice) this.intro.classList.add('hidden'); }
   showError(message) { this.loading?.remove(); this.error.hidden = false; this.error.innerHTML = `${message}<br><br><span class="dashboard-link unavailable">Monitoring dashboard unavailable · no PHP/MySQL source configured</span>`; }
   animate = () => { requestAnimationFrame(this.animate); const delta = Math.min(this.clock.getDelta(), .05); this.office?.update?.(delta); this.analysis?.update(delta); if (this.analysis?.state === 'ANALYZING') { this.analysisUi.hidden = false; this.workspace?.update(delta); } this.player?.update(delta); if (this.player?.pointerLocked) this.interactions?.update(); if (this.renderer && this.office) this.renderer.render(this.office.scene, this.office.camera); };
 }

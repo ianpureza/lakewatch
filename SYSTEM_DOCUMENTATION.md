@@ -9,7 +9,7 @@ LakeWatch 3D is a browser-based environmental monitoring simulation for Laguna d
 - **First-person POV exploration game:** the user walks around a 3D office using WASD and mouse-look controls.
 - **Serious game / educational simulator:** game interaction is used to introduce environmental monitoring concepts.
 - **3D + 2D monitoring dashboard:** the lake can be inspected as an interactive 4D terrain model or a 2D map.
-- **CSV-backed prototype:** the default readings come from the local LLDA CSV adapter. The workstation now presents the system overview rather than an upload form.
+- **CSV-backed prototype:** the default readings come from the local LLDA CSV adapter. The workstation presents the system overview and LLDA monitoring activity explainer.
 
 The experience is designed to feel like entering a small environmental research facility, finding the lake model, and switching from exploration mode into analysis mode.
 
@@ -48,7 +48,7 @@ The interaction manager casts a ray from the center of the camera. When the ray 
 Registered interactions include:
 
 - **Research table:** opens Laguna Lake analysis.
-- **Workstation:** opens the LakeWatch System Overview with the workflow, stack, data setup, API, scope, and limitations.
+- **Workstation:** opens the LakeWatch System Overview with the workflow, stack, LLDA monitoring activity, API, scope, and limitations.
 - **Wall display:** opens the interactive [`Lake Watch Magazine.html`](./pages/Lake%20Watch%20Magazine.html) flipbook in a glass reader panel, replacing the former monitoring-summary interaction.
 
 ### Analysis mode
@@ -83,7 +83,7 @@ The analysis workspace supports:
 | Camera state | [`js/AnalysisController.js`](./js/AnalysisController.js) | Handles office-to-analysis transition, orbit controls, reset, exit, and saved camera state. |
 | Monitoring workspace | [`js/AnalysisWorkspace.js`](./js/AnalysisWorkspace.js) | Loads the CSV adapter data, updates measurements, synchronizes stations, and renders charts/maps. |
 | Wall magazine | [`pages/Lake Watch Magazine.html`](./pages/Lake%20Watch%20Magazine.html) | Interactive editorial flipbook shown by the wall display; supports page turns, keyboard arrows, swipe, charts, quiz cards, and source links. |
-| Standalone 4D model | [`pages/4D.html`](./pages/4D.html) | A self-contained Three.js lake terrain view. The main app embeds it in an iframe and synchronizes state with `postMessage`. |
+| Standalone 4D model | [`pages/4d-2.html`](./pages/4d-2.html) | A self-contained Three.js lake terrain view with divided visual sections. The main app embeds it in an iframe and synchronizes state with `postMessage`. |
 | CSV data adapter | [`api/monitoring.php`](./api/monitoring.php) | Parses the local wide-format LLDA CSV into stations, dates, parameters, observations, provenance, and coordinate-quality metadata. |
 | Compatibility API | [`api/demo-monitoring.php`](./api/demo-monitoring.php) | Backward-compatible route that now forwards to the CSV adapter. |
 | Monitoring source | [`csv/LLDA_2020_2025_combined_partial.csv`](./csv/LLDA_2020_2025_combined_partial.csv) | Current source-of-truth readings used by the simulator. |
@@ -122,7 +122,7 @@ The monitoring CSV contains blank latitude/longitude fields. The adapter overlay
 
 ### Dataset replacement
 
-The current ingestion path is intentionally simple: update the local wide-format CSV, then let [`api/monitoring.php`](./api/monitoring.php) parse it. The station pins, 4D model, 2D map, chart, measurement panel, and summary state all read that shared adapter output. There is no in-scene upload workflow.
+The ingestion path is intentionally simple: update the local wide-format CSV, then let [`api/monitoring.php`](./api/monitoring.php) parse it. The station pins, 4D model, 2D map, chart, measurement panel, and summary state all read that shared adapter output.
 
 The wall magazine is an editorial reading experience rather than a live CSV chart. It is embedded at `?embedded=1` so its header and outer controls disappear inside the glass wall reader while its own page-turn animation remains active.
 
@@ -134,7 +134,7 @@ The wall magazine is an editorial reading experience rather than a live CSV char
 | CSS3 | Dark research-console styling, glass panels, responsive layout, transitions, and AR HUD. |
 | Vanilla JavaScript ES modules | Application logic without a frontend framework or build step. |
 | Three.js `0.169.0` | Main office scene, first-person camera, lighting, geometry, lake analysis model, and station markers. Loaded through the import map in [`pages/simulator.html`](./pages/simulator.html). |
-| Three.js `r128` | Standalone [`pages/4D.html`](./pages/4D.html) model loaded from cdnjs. |
+| Three.js `r128` | Standalone [`pages/4d-2.html`](./pages/4d-2.html) model loaded from cdnjs. |
 | Leaflet `1.9.4` | 2D map view, OpenStreetMap tiles, boundary layer, station markers, tooltips, and popups. |
 | Chart.js `4.4.4` | Selected-station history chart and all-station mean trend. |
 | PHP | Local CSV-to-JSON adapter for the monitoring dataset. |
@@ -179,7 +179,7 @@ The palette is currently implemented as hard-coded CSS and JavaScript values rat
 
 ### Standalone 4D theme
 
-[`pages/4D.html`](./pages/4D.html) has its own light/dark theme variables:
+[`pages/4d-2.html`](./pages/4d-2.html) has its own light/dark theme variables:
 
 - Light background: `#E9F1F5` to `#CFE0EA`.
 - Dark background: `#0D1B25` to `#17303F`.
@@ -260,7 +260,7 @@ When using the local PHP development server on port 8080, use:
 ```text
 http://localhost:8080/lakewatch/index.html
 http://localhost:8080/lakewatch/pages/simulator.html
-http://localhost:8080/lakewatch/pages/4D.html
+http://localhost:8080/lakewatch/pages/4d-2.html
 ```
 
 The browser must be served over HTTP rather than opened directly with `file://` because ES modules, `fetch()`, the PHP endpoint, and GeoJSON loading require a web origin.

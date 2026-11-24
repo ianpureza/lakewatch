@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="LakeWatch 3D first-person environmental monitoring simulator for Laguna Lake">
   <title>LakeWatch 3D | POV Simulator</title>
-  <link rel="stylesheet" href="../css/main.css?v=overview5">
+  <link rel="stylesheet" href="../css/main.css?v=overview14">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 </head>
 <body class="simulator-page">
@@ -17,27 +17,39 @@
       <h1 id="intro-title">Laguna Lake Research Office</h1>
       <p>Explore the environmental monitoring workspace, then approach the central research table to enter the lake analysis.</p>
       <div class="controls" aria-label="Controls">
-        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Walk</span>
-        <span><kbd>Mouse</kbd> Look · <kbd>Wheel</kbd> Zoom · <kbd>+</kbd><kbd>-</kbd> Zoom</span>
-        <span><kbd>Shift</kbd> Fast walk</span>
-        <span><kbd>Esc</kbd> Release cursor</span>
+        <span class="desktop-control"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Walk</span>
+        <span class="desktop-control"><kbd>Mouse</kbd> Look · <kbd>Wheel</kbd> Zoom · <kbd>+</kbd><kbd>-</kbd> Zoom</span>
+        <span class="desktop-control"><kbd>Shift</kbd> Fast walk</span>
+        <span class="desktop-control"><kbd>Esc</kbd> Release cursor</span>
+        <span class="mobile-control"><kbd>Touch</kbd> Drag to look · Tap arrows to walk</span>
       </div>
       <button id="start-button" type="button">Start Exploring</button>
-      <p id="pointer-hint" class="hint">Click the button to capture the mouse.</p>
-      <p class="dashboard-link unavailable">Monitoring data loads from the local LLDA CSV · use the workstation to import another verified dataset</p>
+      <p id="pointer-hint" class="hint">Desktop: click to capture the mouse · Mobile: use touch controls</p>
+      <p class="dashboard-link">Monitoring data loads from the local LLDA CSV · use the workstation to read the system brief and LLDA monitoring activity</p>
     </section>
     <div id="crosshair" aria-hidden="true">+</div>
     <div id="interaction-prompt" class="interaction-prompt" aria-live="polite" hidden></div>
+    <div id="mobile-controls" class="mobile-controls" hidden aria-label="Mobile office controls">
+      <p class="mobile-look-hint">Drag the scene to look</p>
+      <div class="mobile-dpad" aria-label="Move through the office">
+        <button class="mobile-move mobile-move-up" type="button" data-touch-key="KeyW" aria-label="Walk forward">&uarr;</button>
+        <button class="mobile-move mobile-move-left" type="button" data-touch-key="KeyA" aria-label="Walk left">&larr;</button>
+        <button class="mobile-move mobile-move-down" type="button" data-touch-key="KeyS" aria-label="Walk backward">&darr;</button>
+        <button class="mobile-move mobile-move-right" type="button" data-touch-key="KeyD" aria-label="Walk right">&rarr;</button>
+      </div>
+      <button id="mobile-interact" class="mobile-interact" type="button">Interact</button>
+    </div>
     <section id="panel-backdrop" class="panel-backdrop" hidden>
       <article id="interaction-panel" class="interaction-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" tabindex="-1">
         <p class="eyebrow">LAKEWATCH 3D · RESEARCH OFFICE</p>
         <h2 id="panel-title"></h2>
         <div id="panel-content"></div>
-        <div class="panel-actions"><button id="magazine-prev" class="magazine-nav" type="button" hidden>Back</button><button id="magazine-next" class="magazine-nav" type="button" hidden>Next</button><span id="magazine-action-spacer" class="magazine-action-spacer" hidden></span><button id="panel-close" type="button">Close</button><button id="panel-resume" type="button">Resume Exploration</button></div>
+        <div class="panel-actions"><button id="magazine-prev" class="magazine-nav" type="button" aria-label="Previous page" title="Previous page" hidden>‹</button><button id="magazine-next" class="magazine-nav" type="button" aria-label="Next page" title="Next page" hidden>›</button><span id="magazine-action-spacer" class="magazine-action-spacer" hidden></span><button id="panel-close" type="button">Close</button><button id="panel-resume" type="button">Resume Exploration</button></div>
       </article>
     </section>
     <section id="analysis-ui" class="analysis-ui" hidden aria-label="Laguna Lake environmental analysis">
       <button id="analysis-collapse" class="analysis-collapse" type="button" aria-expanded="true">Collapse Analysis</button>
+      <button id="analysis-back" class="analysis-back" type="button">Back to Simulation Room</button>
       <aside class="analysis-sidebar analysis-left">
         <p class="eyebrow">4D/2D ANALYSIS · STAGE 3</p>
         <h2>Laguna Lake</h2>
@@ -49,7 +61,7 @@
         <label for="station-search">Station search</label><input id="station-search" class="station-search" type="search" placeholder="Search station or code" aria-label="Search monitoring stations">
         <div id="station-list" class="station-list" aria-label="Available monitoring stations"></div>
         <div class="layer-controls"><label><input id="stations-toggle" type="checkbox" checked> Station markers</label></div>
-        <div class="analysis-view-switch" role="group" aria-label="Analysis view"><button id="analysis-view-3d" class="is-active" type="button" aria-pressed="true">4D View</button><button id="analysis-view-2d" type="button" aria-pressed="false">2D Map</button></div>
+        <div class="analysis-view-switch" role="group" aria-label="Analysis view"><button id="analysis-view-3d" type="button" aria-pressed="false">4D View</button><button id="analysis-view-2d" class="is-active" type="button" aria-pressed="true">2D Map</button></div>
         <p id="analysis-status" class="analysis-status">Loading geographic boundary…</p>
         <p class="demo-badge">SIMULATED DATA — EDUCATIONAL DEMONSTRATION</p>
       </aside>
@@ -72,6 +84,6 @@
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <script type="module" src="../js/Game.js?v=overview18"></script>
+  <script type="module" src="../js/Game.js?v=overview25"></script>
 </body>
 </html>

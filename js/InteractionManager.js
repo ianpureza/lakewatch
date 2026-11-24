@@ -2,10 +2,11 @@ import * as THREE from 'three';
 
 export class InteractionManager {
   constructor(camera, scene, promptElement) {
-    this.camera = camera; this.scene = scene; this.promptElement = promptElement; this.raycaster = new THREE.Raycaster(); this.registry = new Map(); this.enabled = true; this.target = null; this.lastTarget = null;
-    this.onKeyDown = (event) => { if (event.code === 'KeyE' && !event.repeat && this.enabled && this.target?.entry.onInteract) this.target.entry.onInteract(); };
+    this.camera = camera; this.scene = scene; this.promptElement = promptElement; this.raycaster = new THREE.Raycaster(); this.registry = new Map(); this.enabled = true; this.target = null; this.lastTarget = null; this.isTouchDevice = Boolean(window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0 || innerWidth <= 700);
+    this.onKeyDown = (event) => { if (event.code === 'KeyE' && !event.repeat) this.interact(); };
     document.addEventListener('keydown', this.onKeyDown);
   }
+  interact() { if (this.enabled && this.target?.entry.onInteract) this.target.entry.onInteract(); }
   register({ id, object3D, label, maxDistance = 2, enabled = true, onInteract }) { this.registry.set(id, { id, object3D, label, maxDistance, enabled, onInteract }); return () => this.unregister(id); }
   unregister(id) { this.registry.delete(id); if (this.target?.entry.id === id) this.clearTarget(); }
   setEnabled(enabled) { this.enabled = enabled; if (!enabled) this.clearTarget(); }
@@ -19,7 +20,7 @@ export class InteractionManager {
     if (this.target?.entry.id !== entry.id) this.clearTarget();
     this.target = { entry, mesh: nearest.object }; this.highlight(nearest.object); this.showPrompt(entry.label);
   }
-  showPrompt(label) { this.promptElement.innerHTML = `<kbd>E</kbd> ${label}`; this.promptElement.hidden = false; }
+  showPrompt(label) { this.promptElement.innerHTML = `<kbd>${this.isTouchDevice ? 'Tap' : 'E'}</kbd> ${label}`; this.promptElement.hidden = false; }
   highlight(mesh) {
     if (!mesh?.material || mesh.userData.lakeWatchHighlight) return;
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];

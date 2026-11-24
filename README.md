@@ -18,7 +18,7 @@ The public web root has one entry page. Secondary screens live under `pages/` so
 
 - `index.html` - only public root entry page; lightweight landing page and simulator launch route
 - `pages/simulator.html` - first-person office and analysis UI
-- `pages/4D.html` - standalone lake 4D terrain view, also embedded by the simulator
+- `pages/4d-2.html` - updated standalone lake 4D terrain view with divided visual sections, also embedded by the simulator
 - `assets/lakewatch-tree-atlas.png` - transparent stylized tree atlas used by the 4D renderer
 - `pages/Lake Watch Magazine.html` - interactive flipbook used by the wall display
 - `archive/landingpage.html` - retained legacy landing-page export, not part of the published route
