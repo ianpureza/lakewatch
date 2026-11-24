@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { OfficeScene } from './OfficeScene.js?v=overview27';
-import { PlayerController } from './PlayerController.js?v=overview27';
-import { InteractionManager } from './InteractionManager.js?v=overview27';
+import { OfficeScene } from './OfficeScene.js?v=overview28';
+import { PlayerController } from './PlayerController.js?v=overview28';
+import { InteractionManager } from './InteractionManager.js?v=overview28';
 import { LakeAnalysis } from './LakeAnalysis.js';
 import { AnalysisController } from './AnalysisController.js';
-import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview27';
+import { AnalysisWorkspace } from './AnalysisWorkspace.js?v=overview28';
 
 class Game {
   constructor() {
@@ -45,7 +45,7 @@ class Game {
   }
   openLakePanel() {
     if (!this.analysis.enter()) return;
-    this.player.enabled = false; this.player.keys.clear(); this.interactions.setEnabled(false); document.exitPointerLock?.(); this.analysisUi.classList.remove('analysis-collapsed'); this.analysisUi.querySelector('#analysis-collapse').textContent = '×'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-label', 'Hide analysis panels'); this.analysisUi.querySelector('#analysis-collapse').title = 'Hide analysis panels'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-expanded', 'true'); this.analysisUi.hidden = false;
+    this.player.enabled = false; this.player.keys.clear(); this.interactions.setEnabled(false); document.exitPointerLock?.(); this.analysisUi.classList.remove('analysis-collapsed'); this.analysisUi.querySelector('#analysis-collapse').textContent = '×'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-label', 'Hide analysis panels'); this.analysisUi.querySelector('#analysis-collapse').title = 'Hide analysis panels'; this.analysisUi.querySelector('#analysis-collapse').setAttribute('aria-expanded', 'true'); this.analysisUi.hidden = false; this.workspace.setView('2d');
   }
   exitAnalysis(reacquirePointerLock) {
     if (this.analysis.state === 'EXPLORING') return;
