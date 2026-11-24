@@ -95,21 +95,43 @@ function wallMap(group, wallMat, inkMat, accentMat) {
   const contour = new THREE.LineBasicMaterial({ color: 0x55b9ec, transparent: true, opacity: .8 });
   [[-.72, -.4], [-.48, -.18], [-.2, .1], [.12, .28]].forEach(([z, x], i) => { const points = [[z - .18, x - .08], [z + .08, x - .14], [z + .2, x + .05], [z + .02, x + .14]].map(([pointZ, pointY]) => [pointZ * mapScale, pointY * mapScale]); wallLine(group, `WallMapContour${i}`, points, new THREE.Vector3(-5.83, mapY, -.9), contour); });
 }
+function registerMonitorFeed(office, draw) {
+  office.userData.monitorFeeds = office.userData.monitorFeeds || [];
+  office.userData.monitorFeeds.push(draw);
+  office.userData.updateMonitors = (delta) => {
+    office.userData.monitorTime = (office.userData.monitorTime || 0) + delta * 1000;
+    office.userData.monitorFeeds.forEach((feed) => feed(office.userData.monitorTime));
+  };
+}
+function createMonitoringChartFeed(office, screenMaterial) {
+  const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360; const context = canvas.getContext('2d'); const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+  screenMaterial.map = texture; screenMaterial.color.set(0xffffff); screenMaterial.emissive.set(0x06152f); screenMaterial.emissiveIntensity = .42; screenMaterial.needsUpdate = true;
+  const stationValues = [7.8, 8.25, 7.65, 7.15, 7.75, 8.35, 8.05]; const meanValues = [7.6, 7.95, 7.55, 7.35, 7.55, 7.8, 7.9]; const labels = ['09', '10', '11', '12', '24Q4', '25Q1', '25Q2'];
+  const draw = (time) => {
+    const t = time * .001; const width = canvas.width; const height = canvas.height; const left = 54; const right = 606; const top = 96; const bottom = 286; const min = 4.5; const max = 9.5; const xFor = (index) => left + (right - left) * index / (stationValues.length - 1); const yFor = (value) => bottom - (value - min) / (max - min) * (bottom - top);
+    context.fillStyle = '#06152f'; context.fillRect(0, 0, width, height); context.fillStyle = '#0d2a58'; context.fillRect(0, 0, width, 76); context.fillStyle = '#b5e7ff'; context.font = '700 18px monospace'; context.fillText('WATER QUALITY MONITORING', 24, 31); context.fillStyle = '#8ed6f5'; context.font = '12px monospace'; context.fillText('DISSOLVED OXYGEN · LOCAL DATA / TREND VIEW', 24, 53); context.fillStyle = '#55b9ec'; context.fillRect(24, 63, 164, 3); context.fillStyle = '#f2a65a'; context.fillRect(194, 63, 78, 3);
+    context.fillStyle = 'rgba(85,185,236,.08)'; context.fillRect(left, yFor(9), right - left, yFor(5) - yFor(9)); context.strokeStyle = 'rgba(181,231,255,.16)'; context.lineWidth = 1; for (let value = 5; value <= 9; value++) { const y = yFor(value); context.beginPath(); context.moveTo(left, y); context.lineTo(right, y); context.stroke(); context.fillStyle = '#91b3cf'; context.font = '11px monospace'; context.fillText(String(value), 24, y + 4); } for (let index = 0; index < labels.length; index++) { const x = xFor(index); context.beginPath(); context.moveTo(x, top); context.lineTo(x, bottom); context.stroke(); context.fillStyle = '#91b3cf'; context.font = '10px monospace'; context.fillText(labels[index], x - (labels[index].length > 2 ? 12 : 6), bottom + 20); }
+    const drawSeries = (values, color, widthValue, dash) => { context.strokeStyle = color; context.lineWidth = widthValue; context.setLineDash(dash || []); context.beginPath(); values.forEach((value, index) => { const x = xFor(index); const y = yFor(value); index ? context.lineTo(x, y) : context.moveTo(x, y); }); context.stroke(); context.setLineDash([]); values.forEach((value, index) => { const x = xFor(index); const y = yFor(value); context.fillStyle = color; context.beginPath(); context.arc(x, y, 4, 0, Math.PI * 2); context.fill(); }); };
+    drawSeries(stationValues, '#55b9ec', 3); drawSeries(meanValues, '#f2a65a', 2, [7, 5]); const sweepX = left + ((t % 8) / 8) * (right - left); context.strokeStyle = 'rgba(181,231,255,.55)'; context.lineWidth = 2; context.beginPath(); context.moveTo(sweepX, top - 8); context.lineTo(sweepX, bottom + 8); context.stroke();
+    context.fillStyle = '#55b9ec'; context.fillRect(392, 310, 14, 3); context.fillStyle = '#b5cce2'; context.font = '11px monospace'; context.fillText('Station XV', 412, 314); context.fillStyle = '#f2a65a'; context.fillRect(500, 310, 14, 3); context.fillStyle = '#b5cce2'; context.fillText('All-station mean', 520, 314); context.fillStyle = '#8ed6f5'; context.font = '700 11px monospace'; context.fillText('CLASS C SAFE BAND · 5–9 mg/L', 54, 342); context.fillStyle = '#55b9ec'; context.fillRect(0, height - 5, width * ((t % 10) / 10), 3); texture.needsUpdate = true;
+  };
+  draw(0); registerMonitorFeed(office, draw);
+}
 function createCinematicMonitorFeed(office, screenMaterials) {
   const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360; const context = canvas.getContext('2d'); const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   screenMaterials.forEach((screenMaterial) => { screenMaterial.map = texture; screenMaterial.color.set(0xffffff); screenMaterial.emissive.set(0x082326); screenMaterial.emissiveIntensity = .35; screenMaterial.needsUpdate = true; });
   const draw = (time) => {
     const t = time * .001; const width = canvas.width; const height = canvas.height; const horizon = 190;
-    const sky = context.createLinearGradient(0, 0, 0, horizon); sky.addColorStop(0, '#071a29'); sky.addColorStop(.58, '#0d3c4a'); sky.addColorStop(1, '#d17855'); context.fillStyle = sky; context.fillRect(0, 0, width, height);
-    const glow = context.createRadialGradient(465, 128, 8, 465, 128, 95); glow.addColorStop(0, 'rgba(255,224,153,.9)'); glow.addColorStop(1, 'rgba(255,168,94,0)'); context.fillStyle = glow; context.fillRect(350, 25, 230, 210);
-    context.fillStyle = '#123e45'; context.beginPath(); context.moveTo(0, horizon + 18); for (let x = 0; x <= width; x += 32) context.lineTo(x, horizon - 18 - Math.sin(x * .018) * 18 - Math.sin(x * .041) * 9); context.lineTo(width, height); context.lineTo(0, height); context.closePath(); context.fill();
-    const water = context.createLinearGradient(0, horizon, 0, height); water.addColorStop(0, '#19758a'); water.addColorStop(1, '#062b3d'); context.fillStyle = water; context.fillRect(0, horizon, width, height - horizon);
-    context.globalAlpha = .35; context.strokeStyle = '#8de0d1'; context.lineWidth = 2; for (let row = 0; row < 15; row++) { const y = horizon + 18 + row * 10 + Math.sin(t * 1.4 + row) * 3; context.beginPath(); for (let x = -20; x < width + 20; x += 24) context.lineTo(x, y + Math.sin(x * .035 + t * 2 + row) * 3); context.stroke(); } context.globalAlpha = 1;
-    const stations = [[155,236],[245,218],[332,251],[420,228],[505,263]]; stations.forEach(([x, y], index) => { const pulse = 4 + Math.sin(t * 3 + index) * 2; context.strokeStyle = 'rgba(117,231,205,.45)'; context.beginPath(); context.arc(x, y, pulse + 7, 0, Math.PI * 2); context.stroke(); context.fillStyle = index === 2 ? '#f3d48a' : '#75e6d1'; context.beginPath(); context.arc(x, y, 4, 0, Math.PI * 2); context.fill(); });
-    context.fillStyle = 'rgba(4,18,28,.68)'; context.fillRect(18, 18, 260, 50); context.fillStyle = '#8fe6d2'; context.font = '700 18px monospace'; context.fillText('LAGUNA DE BAY', 32, 42); context.fillStyle = '#d8eee7'; context.font = '12px monospace'; context.fillText('LIVE CINEMATIC MONITORING FEED', 32, 59); context.fillStyle = '#f3d48a'; context.font = '700 13px monospace'; context.fillText(`4D / ${new Date().toISOString().slice(11, 19)} UTC`, width - 190, 30);
-    context.fillStyle = '#75e6d1'; context.fillRect(0, height - 8, width * ((t % 12) / 12), 3); context.fillStyle = 'rgba(171,255,232,.14)'; for (let y = 0; y < height; y += 6) context.fillRect(0, y, width, 1); texture.needsUpdate = true;
+    const sky = context.createLinearGradient(0, 0, 0, horizon); sky.addColorStop(0, '#06152f'); sky.addColorStop(.58, '#0d3d73'); sky.addColorStop(1, '#2385c9'); context.fillStyle = sky; context.fillRect(0, 0, width, height);
+    const glow = context.createRadialGradient(465, 128, 8, 465, 128, 95); glow.addColorStop(0, 'rgba(181,231,255,.9)'); glow.addColorStop(1, 'rgba(85,185,236,0)'); context.fillStyle = glow; context.fillRect(350, 25, 230, 210);
+    context.fillStyle = '#123e70'; context.beginPath(); context.moveTo(0, horizon + 18); for (let x = 0; x <= width; x += 32) context.lineTo(x, horizon - 18 - Math.sin(x * .018) * 18 - Math.sin(x * .041) * 9); context.lineTo(width, height); context.lineTo(0, height); context.closePath(); context.fill();
+    const water = context.createLinearGradient(0, horizon, 0, height); water.addColorStop(0, '#2d8fc1'); water.addColorStop(1, '#06152f'); context.fillStyle = water; context.fillRect(0, horizon, width, height - horizon);
+    context.globalAlpha = .35; context.strokeStyle = '#8ed6f5'; context.lineWidth = 2; for (let row = 0; row < 15; row++) { const y = horizon + 18 + row * 10 + Math.sin(t * 1.4 + row) * 3; context.beginPath(); for (let x = -20; x < width + 20; x += 24) context.lineTo(x, y + Math.sin(x * .035 + t * 2 + row) * 3); context.stroke(); } context.globalAlpha = 1;
+    const stations = [[155,236],[245,218],[332,251],[420,228],[505,263]]; stations.forEach(([x, y], index) => { const pulse = 4 + Math.sin(t * 3 + index) * 2; context.strokeStyle = 'rgba(142,214,245,.45)'; context.beginPath(); context.arc(x, y, pulse + 7, 0, Math.PI * 2); context.stroke(); context.fillStyle = index === 2 ? '#b5e7ff' : '#55b9ec'; context.beginPath(); context.arc(x, y, 4, 0, Math.PI * 2); context.fill(); });
+    context.fillStyle = 'rgba(3,18,49,.74)'; context.fillRect(18, 18, 260, 50); context.fillStyle = '#b5e7ff'; context.font = '700 18px monospace'; context.fillText('LAGUNA DE BAY', 32, 42); context.fillStyle = '#eff8ff'; context.font = '12px monospace'; context.fillText('CINEMATIC MONITORING FEED', 32, 59); context.fillStyle = '#b5e7ff'; context.font = '700 13px monospace'; context.fillText(`4D / ${new Date().toISOString().slice(11, 19)} UTC`, width - 190, 30);
+    context.fillStyle = '#55b9ec'; context.fillRect(0, height - 8, width * ((t % 12) / 12), 3); context.fillStyle = 'rgba(142,214,245,.14)'; for (let y = 0; y < height; y += 6) context.fillRect(0, y, width, 1); texture.needsUpdate = true;
   };
-  draw(0); office.userData.updateMonitors = (delta) => { office.userData.monitorTime = (office.userData.monitorTime || 0) + delta * 1000; draw(office.userData.monitorTime); };
+  draw(0); registerMonitorFeed(office, draw);
 }
 
 export function buildOffice(scene, collisions) {
@@ -146,7 +168,7 @@ export function buildOffice(scene, collisions) {
   cube(office, collisions, 'WorkstationDesk', new THREE.Vector3(-3.85, .82, 2.95), [3.25, .14, 1.05], wood);
   cube(office, collisions, 'WorkstationPedestal', new THREE.Vector3(-3.85, .4, 3.12), [1.1, .72, .72], dark);
   const screenMaterials = []; [-4.45, -3.25].forEach((x, i) => { cube(office, collisions, `Monitor${i + 1}`, new THREE.Vector3(x, 1.54, 2.94), [.9, .58, .06], dark, true); const screenMaterial = material(`screen${i}`, i ? 0x2e7777 : 0x356b72, .28, .12); screenMaterials.push(screenMaterial); cube(office, collisions, `MonitorScreen${i + 1}`, new THREE.Vector3(x, 1.54, 2.9), [.72, .4, .018], screenMaterial, false, false); cube(office, collisions, 'MonitorStand', new THREE.Vector3(x, 1.14, 2.94), [.08, .28, .08], dark, false); });
-  createCinematicMonitorFeed(office, screenMaterials);
+  createMonitoringChartFeed(office, screenMaterials[0]); createCinematicMonitorFeed(office, screenMaterials.slice(1));
   const displayFrame = material('display-frame', 0x06152f, .3, .72); cube(office, collisions, 'DisplayFrame', new THREE.Vector3(3.7, 2.22, -4.28), [3.25, 1.42, .12], displayFrame, true);
   const displayMaterial = material('display', 0xffffff, .3, .12); cube(office, collisions, 'MonitoringDisplay', new THREE.Vector3(3.7, 2.22, -4.2), [2.92, 1.1, .025], displayMaterial, false, false); applyLagunaMapTexture(displayMaterial);
   for (let i = 0; i < 3; i++) cube(office, collisions, 'StorageCabinet', new THREE.Vector3(-4.55, .9 + i * .72, -.8), [1.25, .62, 1.25], i === 1 ? wood : dark);

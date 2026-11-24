@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OfficeScene } from './OfficeScene.js?v=overview42';
+import { OfficeScene } from './OfficeScene.js?v=overview44';
 import { PlayerController } from './PlayerController.js?v=overview42';
 import { InteractionManager } from './InteractionManager.js?v=overview42';
 import { LakeAnalysis } from './LakeAnalysis.js';
