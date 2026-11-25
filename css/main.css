@@ -470,12 +470,6 @@ button:focus-visible, select:focus-visible, canvas:focus-visible { outline-color
 .layer-controls input, .analysis-time-slider { accent-color: #2385c9; }
 .analysis-view-switch button.is-active, .analysis-view-switch button[aria-pressed="true"] { border-color: #8ed6f5 !important; background: #2385c9 !important; color: #eff8ff !important; }
 .station-list-item.is-selected { background: rgba(35,133,201,.28) !important; border-left-color: #55b9ec; }
-.dataset-import { display: grid; gap: .45rem; margin-top: 1rem; padding: .75rem; border: 1px solid rgba(142,214,245,.25); border-radius: 9px; background: rgba(3,20,49,.42); }
-.dataset-import-title { margin: 0; color: #8ed6f5; font: 800 .62rem/1.2 "SFMono-Regular", Consolas, monospace; letter-spacing: .1em; }
-.dataset-import label { margin: 0; color: #b5cce2; font-size: .68rem; line-height: 1.4; }
-.dataset-import input[type="file"] { width: 100%; padding: .45rem; border: 1px dashed rgba(142,214,245,.45); border-radius: 6px; background: rgba(13,53,104,.7); color: #eff8ff; font: .68rem/1.2 inherit; }
-.dataset-import input[type="file"]::file-selector-button { margin-right: .45rem; padding: .35rem .55rem; border: 1px solid rgba(142,214,245,.6); border-radius: 5px; background: #2385c9; color: #eff8ff; font: 700 .66rem/1.2 inherit; cursor: pointer; }
-.dataset-upload-status { margin: 0; color: #91b3cf; font-size: .65rem; line-height: 1.4; }
 .threshold-note { display: block; margin-top: .4rem; color: #91b3cf; font-size: .7rem; }
 .measurement-status { margin-top: .55rem; font: 800 .72rem/1.2 "SFMono-Regular", Consolas, monospace; letter-spacing: .04em; }
 .pin-legend { display: flex; flex-wrap: wrap; gap: .35rem .65rem; margin-top: .7rem; color: #b5cce2; font-size: .62rem; line-height: 1.2; }

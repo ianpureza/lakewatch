@@ -5,7 +5,7 @@ export class AnalysisWorkspace {
     this.camera = camera; this.domElement = domElement; this.lakeAnalysis = lakeAnalysis; this.ui = ui;
     this.data = null; this.parameter = 'do'; this.date = null; this.selectedStation = null; this.chart = null; this.mapFrame = null; this.dragStart = null; this.timePlaying = false; this.timeAccumulator = 0; this.viewMode = '2d'; this.flatGeoJson = null; this.flatStationPoints = []; this.flatZoom = 1; this.leafletMap = null; this.leafletBoundary = null; this.leafletStations = null; this.thresholds = {}; this.coordinateHints = {};
     this.parameterSelect = ui.querySelector('#parameter-select'); this.dateSelect = ui.querySelector('#date-select'); this.search = ui.querySelector('#station-search'); this.stationList = ui.querySelector('#station-list'); this.status = ui.querySelector('#analysis-status'); this.stationName = ui.querySelector('#station-name'); this.stationDetails = ui.querySelector('#station-details'); this.measurementList = ui.querySelector('#measurement-list'); this.legend = ui.querySelector('#legend'); this.mapToggle = { checked: false }; this.stationToggle = ui.querySelector('#stations-toggle'); this.labelsButton = ui.querySelector('#analysis-labels'); this.timePlay = ui.querySelector('#analysis-time-play'); this.timeSlider = ui.querySelector('#analysis-time-slider'); this.timeReadout = ui.querySelector('#analysis-time-readout'); this.view3dButton = ui.querySelector('#analysis-view-3d'); this.view2dButton = ui.querySelector('#analysis-view-2d'); this.flatMapHost = ui.querySelector('#reference-map-2d'); this.flatMapCanvas = ui.querySelector('#flat-map-canvas'); this.leafletHost = ui.querySelector('#leaflet-map');
-    this.raycaster = new THREE.Raycaster(); this.datasetFiles = ui.querySelector('#dataset-files'); this.datasetUploadStatus = ui.querySelector('#dataset-upload-status'); this.datasetFiles?.addEventListener('change', () => this.importDatasetFiles());
+    this.raycaster = new THREE.Raycaster();
     this.parameterSelect.addEventListener('change', () => { this.parameter = this.parameterSelect.value; this.refresh(); });
     this.dateSelect.addEventListener('change', () => this.setDate(this.dateSelect.value));
     this.timeSlider.addEventListener('input', () => { if (this.data) this.setDate(this.data.dates[Number(this.timeSlider.value)]); });
@@ -208,35 +208,6 @@ export class AnalysisWorkspace {
   thresholdDescription(parameterKey) {
     const threshold = this.thresholds?.[parameterKey]; if (!threshold) return '';
     const limits = []; if (threshold.min !== null) limits.push(`≥ ${threshold.min}`); if (threshold.max !== null) limits.push(`≤ ${threshold.max}`); return `Class C limit: ${limits.join(' · ')}${threshold.unit ? ` ${threshold.unit}` : ''}`;
-  }
-  async importDatasetFiles() {
-    const files = [...(this.datasetFiles?.files || [])]; if (!files.length) return;
-    const thresholdFile = files.find((file) => /threshold|class.?c/i.test(file.name)); const dataFile = files.find((file) => file !== thresholdFile && /water|monitor|quality|combined/i.test(file.name)) || files.find((file) => file !== thresholdFile);
-    if (!dataFile) { if (this.datasetUploadStatus) this.datasetUploadStatus.textContent = 'Choose a water-quality CSV.'; return; }
-    try { const data = this.parseMonitoringCsv(await dataFile.text(), dataFile.name); if (thresholdFile) this.thresholds = this.parseThresholdCsv(await thresholdFile.text()); this.applyDataset(data, `uploaded ${dataFile.name}`); if (this.datasetUploadStatus) this.datasetUploadStatus.textContent = `Loaded ${data.stations.length} stations · ${data.dates.length} dates${thresholdFile ? ` · ${thresholdFile.name} applied` : ' · default thresholds retained'}.`; }
-    catch (error) { if (this.datasetUploadStatus) this.datasetUploadStatus.textContent = `Import failed · ${error.message}`; }
-  }
-  applyDataset(data, sourceLabel = 'uploaded dataset') {
-    if (!data?.stations?.length || !data?.dates?.length || !data?.parameters) throw new Error('Dataset must include stations, dates, and parameters.');
-    this.data = data;
-    this.normalizeStations(this.data);
-    this.notifyDataset();
-    this.parameter = Object.keys(data.parameters)[0];
-    this.date = data.dates[data.dates.length - 1];
-    this.parameterSelect.replaceChildren(...Object.entries(data.parameters).map(([key, parameter]) => new Option(`${parameter.name} (${parameter.unit})`, key)));
-    this.parameterSelect.value = this.parameter;
-    this.dateSelect.replaceChildren(...data.dates.map((date) => new Option(this.formatObservationDate(date), date)));
-    this.dateSelect.value = this.date;
-    this.dateSelect.disabled = false;
-    this.timeSlider.max = String(data.dates.length - 1);
-    this.timeSlider.value = String(data.dates.length - 1);
-    this.timeReadout.textContent = this.formatObservationDate(this.date);
-    this.lakeAnalysis.setStations(data.stations, (station) => this.selectStation(station));
-    this.selectStation(data.stations[0]);
-    this.status.textContent = this.datasetStatus(data) + ` · ${sourceLabel}`;
-    this.initMap();
-    this.toggleMap(this.mapToggle.checked);
-    this.refresh();
   }
   filterStations() { const query = this.search.value.trim().toLowerCase(); this.lakeAnalysis.stationEntries.forEach(({ station, marker, label }) => { const visible = !query || `${station.name} ${station.code}`.toLowerCase().includes(query); marker.visible = visible; label.hidden = !visible || !this.lakeAnalysis.labelsVisible; }); }
   initLeafletMap() { if (!window.L || !this.leafletHost || this.leafletMap) return; this.leafletMap = window.L.map(this.leafletHost, { zoomControl: true, attributionControl: true, preferCanvas: false }).setView([14.35, 121.25], 9); window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(this.leafletMap); this.leafletStations = window.L.layerGroup().addTo(this.leafletMap); if (this.flatGeoJson) { this.leafletBoundary = window.L.geoJSON(this.flatGeoJson, { style: { color: '#2b665d', weight: 2, fillColor: '#4da4a1', fillOpacity: .28 } }).addTo(this.leafletMap); this.leafletMap.setView([14.35, 121.25], 9); } }
