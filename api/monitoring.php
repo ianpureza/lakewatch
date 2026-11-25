@@ -4,7 +4,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
-$csvPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'csv' . DIRECTORY_SEPARATOR . 'LLDA_2020_2025_combined_partial.csv';
+$csvPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'csv' . DIRECTORY_SEPARATOR . 'llda_master_historical.csv';
 $coordinatePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'csv' . DIRECTORY_SEPARATOR . 'LLDA_2020Q4_estimated_station_coordinates.csv';
 
 function failResponse(string $message, int $status = 500): void
@@ -55,6 +55,7 @@ $coordinateHints = [
     'XXI' => [14.4500, 121.3300, 'Cardona area anchor; exact coordinates are not in the CSV.'],
     'XXII' => [14.4200, 121.3300, 'Jala-jala area anchor; exact coordinates are not in the CSV.'],
     'XXIII' => [14.3200, 121.4200, 'Lumban area anchor; exact coordinates are not in the CSV.'],
+    'XXIV' => [14.4800, 121.2900, 'Cardona (North Central Bay) area anchor; exact coordinates are not in the CSV.'],
 ];
 
 // Prefer the supplied coordinate update for station IDs it contains. Its own
@@ -85,7 +86,7 @@ if (is_readable($coordinatePath) && ($coordinateHandle = fopen($coordinatePath, 
     fclose($coordinateHandle);
 }
 
-$definitions = [
+$legacyDefinitions = [
     'do' => ['name' => 'Dissolved Oxygen', 'unit' => 'mg/L', 'column' => 'do_mg_l', 'description' => 'Dissolved oxygen concentration reported in the source CSV.'],
     'ph' => ['name' => 'pH', 'unit' => 'pH units', 'column' => 'ph', 'description' => 'Acidity/alkalinity reading reported in the source CSV.'],
     'bod' => ['name' => 'Biochemical Oxygen Demand', 'unit' => 'mg/L', 'column' => 'bod_mg_l', 'description' => 'Five-day biochemical oxygen demand reported in the source CSV.'],
@@ -97,6 +98,23 @@ $definitions = [
     'fecal_coliform' => ['name' => 'Fecal Coliform', 'unit' => 'MPN/100 mL', 'column' => 'fecal_coliform_mpn_100ml', 'description' => 'Fecal coliform count reported in the source CSV.'],
 ];
 
+$masterDefinitions = [
+    'do' => ['name' => 'Dissolved Oxygen', 'unit' => 'mg/L', 'column' => 'dissolved_oxygen', 'description' => 'Dissolved oxygen concentration reported in the master CSV.'],
+    'bod' => ['name' => 'Biochemical Oxygen Demand', 'unit' => 'mg/L', 'column' => 'bod', 'description' => 'Five-day biochemical oxygen demand reported in the master CSV.'],
+    'fecal_coliform' => ['name' => 'Fecal Coliform', 'unit' => 'MPN/100 mL', 'column' => 'fecal_coliform', 'description' => 'Fecal coliform count reported in the master CSV.'],
+    'ph' => ['name' => 'pH', 'unit' => 'pH units', 'column' => 'ph', 'description' => 'Acidity/alkalinity reading reported in the master CSV.'],
+    'ammonia' => ['name' => 'Ammonia', 'unit' => 'mg/L', 'column' => 'ammonia', 'description' => 'Ammonia concentration reported in the master CSV.'],
+    'nitrate' => ['name' => 'Nitrate', 'unit' => 'mg/L', 'column' => 'nitrate', 'description' => 'Nitrate concentration reported in the master CSV.'],
+    'phosphate' => ['name' => 'Phosphate', 'unit' => 'mg/L', 'column' => 'phosphate', 'description' => 'Phosphate concentration reported in the master CSV.'],
+    'cod' => ['name' => 'Chemical Oxygen Demand', 'unit' => 'mg/L', 'column' => 'cod', 'description' => 'Chemical oxygen demand reported in the master CSV.'],
+    'turbidity' => ['name' => 'Turbidity', 'unit' => 'NTU', 'column' => 'turbidity', 'description' => 'Water clarity indicator reported in the master CSV.'],
+    'temperature' => ['name' => 'Temperature', 'unit' => '°C', 'column' => 'temperature', 'description' => 'Surface-water temperature reported in the master CSV.'],
+    'chloride' => ['name' => 'Chloride', 'unit' => 'mg/L', 'column' => 'chloride', 'description' => 'Chloride concentration reported in the master CSV.'],
+    'tss' => ['name' => 'Total Suspended Solids', 'unit' => 'mg/L', 'column' => 'tss', 'description' => 'Total suspended solids reported in the master CSV.'],
+    'tds' => ['name' => 'Total Dissolved Solids', 'unit' => 'mg/L', 'column' => 'tds', 'description' => 'Total dissolved solids reported in the master CSV.'],
+    'alkalinity' => ['name' => 'Alkalinity', 'unit' => 'mg/L', 'column' => 'alkalinity', 'description' => 'Alkalinity reported in the master CSV.'],
+];
+
 $handle = fopen($csvPath, 'rb');
 if ($handle === false) failResponse('Monitoring CSV could not be opened.');
 
@@ -106,12 +124,16 @@ if ($headerRow === false) failResponse('Monitoring CSV has no header row.');
 $headers = array_map('normalizeHeader', $headerRow);
 $headerIndex = [];
 foreach ($headers as $index => $header) $headerIndex[$header] = $index;
-foreach (['station_id', 'station_name', 'sample_month'] as $required) {
+$masterFormat = array_key_exists('period_type', $headerIndex) && array_key_exists('dissolved_oxygen', $headerIndex);
+$definitions = $masterFormat ? $masterDefinitions : $legacyDefinitions;
+$requiredHeaders = $masterFormat ? ['station_id', 'station_name'] : ['station_id', 'station_name', 'sample_month'];
+foreach ($requiredHeaders as $required) {
     if (!array_key_exists($required, $headerIndex)) failResponse("Monitoring CSV is missing the {$required} column.", 422);
 }
 
 $stations = [];
 $dates = [];
+$periods = [];
 $parameterCounts = array_fill_keys(array_keys($definitions), 0);
 $rowCount = 0;
 $skippedRows = 0;
@@ -124,7 +146,8 @@ while (($values = fgetcsv($handle)) !== false) {
 
     $stationId = trim($record['station_id'] ?? '');
     $stationName = trim($record['station_name'] ?? '');
-    $date = normalizeDate($record['sample_month'] ?? '');
+    $date = normalizeDate($masterFormat ? ($record['date'] ?? '') : ($record['sample_month'] ?? ''));
+    if ($date === null && $masterFormat && preg_match('/^\d{4}$/', $record['year'] ?? '')) $date = $record['year'] . '-01-01';
     if ($stationId === '' || $stationName === '' || $date === null) {
         $skippedRows++;
         continue;
@@ -144,7 +167,7 @@ while (($values = fgetcsv($handle)) !== false) {
             'coordinate_note' => $csvLatitude !== null && $csvLongitude !== null ? 'Coordinates supplied by the monitoring CSV.' : $hint[2],
             'coordinate_status' => $csvLatitude !== null && $csvLongitude !== null ? 'CSV coordinate' : ($hint[3] ?? 'Approximate coordinate estimate.'),
             'coordinate_source' => $csvLatitude !== null && $csvLongitude !== null ? 'LLDA monitoring CSV' : ($hint[4] ?? 'Coordinate fallback'),
-            'source' => $record['data_type'] ?: 'Local CSV dataset',
+            'source' => ($record['data_type'] ?? '') ?: ($masterFormat ? (($record['period_type'] ?? '') === 'annual_average' ? 'LLDA annual average' : 'LLDA monthly observation') : 'Local CSV dataset'),
             'source_url' => $record['source_url'] ?: null,
             'source_urls' => [],
             'observations' => [],
@@ -174,6 +197,9 @@ while (($values = fgetcsv($handle)) !== false) {
         $parameterCounts[$key]++;
     }
     $dates[$date] = true;
+    $periods[$date] = $masterFormat
+        ? (($record['period_type'] ?? '') === 'annual_average' ? 'Annual average' : (($record['period_type'] ?? '') === 'monthly' ? 'Monthly observation' : ($record['period_type'] ?? 'Observation')))
+        : 'Sample month';
     $rowCount++;
     unset($station);
 }
@@ -205,8 +231,8 @@ echo json_encode([
     'simulated' => false,
     'partial' => true,
     'label' => 'LLDA CSV · partial monitoring dataset',
-    'dataset_label' => 'LLDA_2020_2025_combined_partial.csv',
-    'source_file' => 'csv/LLDA_2020_2025_combined_partial.csv',
+    'dataset_label' => 'llda_master_historical.csv',
+    'source_file' => 'csv/llda_master_historical.csv',
     'coordinate_source_file' => 'csv/LLDA_2020Q4_estimated_station_coordinates.csv',
     'coordinate_rows_loaded' => $coordinateRows,
     'coordinate_station_count' => $updatedStationCount,
@@ -217,5 +243,6 @@ echo json_encode([
     'skipped_rows' => $skippedRows,
     'parameters' => $parameters,
     'dates' => array_keys($dates),
+    'periods' => $periods,
     'stations' => array_values($stations),
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

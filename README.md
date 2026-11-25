@@ -10,7 +10,7 @@ LakeWatch 3D is a vanilla JavaScript/Three.js first-person environmental researc
 4. The lightweight landing page loads first. Select **Enter the simulator**.
 5. Click **Start Exploring**, then use WASD and the mouse. Hold Shift to walk faster; press Esc to release the cursor.
 
-Three.js is loaded as an ES module from jsDelivr. The geographic boundary is vendored in `assets/laguna-de-bay.geojson`, and the local monitoring adapter reads `csv/LLDA_2020_2025_combined_partial.csv` through PHP. The project has no MySQL database; the CSV is the current source of truth for station readings.
+Three.js is loaded as an ES module from jsDelivr. The geographic boundary is vendored in `assets/laguna-de-bay.geojson`, and the simulator uses `csv/llda_master_historical.csv` as its current source of truth. The PHP adapter serves that same master dataset to the standalone 4D view and fallback loader. The project has no MySQL database.
 
 ## Published structure
 
@@ -22,7 +22,7 @@ The public web root has one entry page. Secondary screens live under `pages/` so
 - `assets/lakewatch-tree-atlas.png` - transparent stylized tree atlas used by the 4D renderer
 - `pages/Lake Watch Magazine.html` - interactive flipbook used by the wall display
 - `archive/landingpage.html` - retained legacy landing-page export, not part of the published route
-- `csv/LLDA_2020_2025_combined_partial.csv` - local LLDA monitoring readings used by the simulator
+- `csv/llda_master_historical.csv` - current LLDA master readings used by the simulator
 - `csv/LLDA_2020Q4_estimated_station_coordinates.csv` - shared estimated lake/tributary coordinate layer
 - `api/monitoring.php` - CSV-to-JSON adapter used by the office, 4D model, map, charts, and summary
 - `api/demo-monitoring.php` - backward-compatible route to the CSV adapter
@@ -41,7 +41,7 @@ The public web root has one entry page. Secondary screens live under `pages/` so
 
 Look directly at the central table within range to see **E - Analyze Laguna Lake**. The camera smoothly transitions to the projected lake model. Look at the wall display and press **E - Read Lake Watch Magazine** to open the interactive flipbook in the wall reader. Drag to orbit, scroll to zoom, reset the camera, and use Exit Analysis to return to the office. The boundary asset is WGS84 GeoJSON from OpenStreetMap contributors and is used only for shoreline geometry; no bathymetry is invented.
 
-The simulator now reads the local CSV through the PHP monitoring adapter. The current file contains 63 readings across 15 station IDs and six sample months. The available measurements are dissolved oxygen, biochemical oxygen demand, and fecal coliform; blank source fields remain missing rather than being interpolated. The coordinate update supplies estimated positions for 9 matching lake station IDs; the remaining 6 use fallback anchors. All coordinate points are explicitly approximate, not official GPS.
+The simulator reads the current LLDA master CSV in the browser and the PHP adapter exposes the same data for the standalone 4D view. The file contains 117 source rows across 16 station IDs and 10 time periods: annual averages from 2009–2012 plus monthly observations in October–December 2024 and April–June 2025. It includes dissolved oxygen, pH, BOD, fecal coliform, nutrients, and additional water-quality fields; blank source fields remain missing rather than being interpolated. The coordinate update supplies estimated positions for 9 matching station IDs; the remaining 7 use fallback anchors. All coordinate points are explicitly approximate, not official GPS.
 
 ## Manual testing checklist
 

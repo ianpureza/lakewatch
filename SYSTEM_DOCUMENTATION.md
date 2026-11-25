@@ -86,7 +86,7 @@ The analysis workspace supports:
 | Standalone 4D model | [`pages/4d-2.html`](./pages/4d-2.html) | A self-contained Three.js lake terrain view with divided visual sections. The main app embeds it in an iframe and synchronizes state with `postMessage`. |
 | CSV data adapter | [`api/monitoring.php`](./api/monitoring.php) | Parses the local wide-format LLDA CSV into stations, dates, parameters, observations, provenance, and coordinate-quality metadata. |
 | Compatibility API | [`api/demo-monitoring.php`](./api/demo-monitoring.php) | Backward-compatible route that now forwards to the CSV adapter. |
-| Monitoring source | [`csv/LLDA_2020_2025_combined_partial.csv`](./csv/LLDA_2020_2025_combined_partial.csv) | Current source-of-truth readings used by the simulator. |
+| Monitoring source | [`csv/llda_master_historical.csv`](./csv/llda_master_historical.csv) | Current source-of-truth readings used by the simulator and PHP adapter. |
 | Coordinate source | [`csv/LLDA_2020Q4_estimated_station_coordinates.csv`](./csv/LLDA_2020Q4_estimated_station_coordinates.csv) | 44 estimated lake/tributary positions from the supplied Q4 2020 station map; not official GPS. |
 | Geographic asset | [`assets/laguna-de-bay.geojson`](./assets/laguna-de-bay.geojson) | WGS84 lake boundary used by the 3D and 2D analysis views. |
 | Tree asset | [`assets/lakewatch-tree-atlas.png`](./assets/lakewatch-tree-atlas.png) | Transparent three-variant tree atlas layered into the 4D renderer with crossed billboards and procedural fallback geometry. |
@@ -108,21 +108,21 @@ Prepared CSV ───────────────────> monitori
 
 ### Default dataset
 
-The current CSV adapter reads:
+The current CSV adapter reads [`csv/llda_master_historical.csv`](./csv/llda_master_historical.csv):
 
-- 63 source rows.
-- 15 station IDs.
-- Six sample months: October–December 2023 and January–March 2025.
-- Dissolved oxygen, biochemical oxygen demand, and fecal coliform values; other declared columns are retained as unavailable when blank.
+- 117 source rows.
+- 16 station IDs.
+- 10 observation periods: annual averages from 2009–2012, monthly observations from October–December 2024, and monthly observations from April–June 2025.
+- Dissolved oxygen, pH, biochemical oxygen demand, fecal coliform, nutrient, and additional water-quality values; blank source fields remain unavailable.
 - Station observations keyed by date and parameter.
 - Per-row source URLs and source-type labels.
 - An explicit partial-data provenance label.
 
-The monitoring CSV contains blank latitude/longitude fields. The adapter overlays the supplied coordinate file for matching station IDs: 9 of the 15 monitoring stations use updated Q4 2020 estimates, while 6 retain fallback named-area anchors. All positions are marked approximate because the coordinate file explicitly says they are not official GPS.
+The monitoring CSV contains blank latitude/longitude fields. The adapter overlays the supplied coordinate file for matching station IDs: 9 of the 16 monitoring stations use updated Q4 2020 estimates, while 7 retain fallback named-area anchors. All positions are marked approximate because the coordinate file explicitly says they are not official GPS.
 
 ### Dataset replacement
 
-The ingestion path is intentionally simple: update the local wide-format CSV, then let [`api/monitoring.php`](./api/monitoring.php) parse it. The station pins, 4D model, 2D map, chart, measurement panel, and summary state all read that shared adapter output.
+The ingestion path is intentionally simple: update the local master CSV, then let the browser parser and [`api/monitoring.php`](./api/monitoring.php) parse the same file. The station pins, 4D model, 2D map, chart, measurement panel, and summary state all read that shared dataset.
 
 The wall magazine is an editorial reading experience rather than a live CSV chart. It is embedded at `?embedded=1` so its header and outer controls disappear inside the glass wall reader while its own page-turn animation remains active.
 
